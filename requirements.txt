@@ -3,3 +3,7 @@ scipy>=1.10
 Pillow>=10.0
 matplotlib>=3.7
 tifffile>=2023.7.10
+
+#单图质检（单通道）	python cli.py demo_single.tif
+#单图质检（四极化）	python cli.py demo_quad.tif --nominal-resolution 3.0 --pixel-spacing 10.0
+#数据集质检	python dataset_cli.py dataset_demo --group-by processor_version

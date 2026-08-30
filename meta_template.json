@@ -1,0 +1,20 @@
+{
+  "product_family": "GRD",
+  "acquisition_mode": "IW",
+  "sensor": "S1C",
+  "crs": "EPSG:4326",
+  "nominal_resolution": 3.0,
+  "pixel_spacing": 10.0,
+  "incidence_angle": 35.0,
+  "scattering_area": 87.5,
+  "nesz": -22.0,
+  "geometric_accuracy": 0.55,
+  "geometric_sigma": 0.41,
+  "quality_flag": "pass",
+  "calibration_factor": 1.0,
+  "processor_version": "1.1.0",
+  "software_version": "1.1.0",
+  "auxiliary_version": "v3.2",
+  "coherence_window": "7x7",
+  "mask": "land_mask"
+}
