@@ -7,6 +7,7 @@
 """
 import numpy as np
 from PIL import Image
+from datetime import datetime, timedelta
 
 
 def speckle_scene(H=512, W=512, L=1, seed=0):
@@ -115,6 +116,73 @@ def make_quad():
     print("已生成 demo_quad.tif（四极化 HH/HV/VH/VV，float32）")
 
 
+def make_dataset(n=12, out_dir="dataset_demo", seed_base=0, size=512):
+    """生成 N 张变体单通道幅度 TIFF + 同茎元数据边车，用于数据集级质检验证。
+
+    逐图变化视数 L、扇贝幅度、饱和削波上限、丢行、负值率、处理器版本、采集时间，
+    制造聚合分布 / 离群 / 批次判定 / 分组审计的信号。
+    """
+    import os
+    import json
+    import tifffile
+
+    os.makedirs(out_dir, exist_ok=True)
+    looks = [1, 4, 9]
+    processors = ["1.0.3", "1.0.3", "1.1.0"]
+    base_time = datetime(2024, 1, 1)
+    for i in range(n):
+        rng = np.random.RandomState(seed_base * 1000 + i)
+        L = looks[i % len(looks)]
+        intensity = speckle_scene(size, size, L=L, seed=seed_base * 100 + i)
+        if i % 2 == 0:
+            intensity = add_point_target(intensity, size // 2, size // 2,
+                                         peak=122500.0, width=7.0)
+        amp = to_amp(intensity)
+
+        # 扇贝：多数轻微，少数强（制造离群）
+        rows = np.arange(size)
+        scallop_amp = 0.02 if i % 5 != 3 else 0.10
+        amp = amp * (1.0 + scallop_amp * np.sin(2 * np.pi * rows / 64))[:, None]
+
+        # 子带台阶
+        amp[:, size // 2:] *= 1.12
+
+        # 饱和削波：上限在 200 / 400 间变化（制造饱和率差异）
+        clip = 200.0 if i % 4 == 1 else 400.0
+        amp = np.minimum(amp, clip)
+
+        # 丢行：约 1/3 图像
+        if i % 3 == 1:
+            amp[size // 2, :] = 0.0
+
+        # 边界填充 + 少量负值
+        amp[:4, :] = 0.0
+        amp[-4:, :] = 0.0
+        amp[:, :4] = 0.0
+        amp[:, -4:] = 0.0
+        neg = rng.rand(size, size) < 0.002
+        amp[neg] = -0.05 * rng.rand(int(neg.sum()))
+
+        stem = f"img_{i:02d}"
+        tifffile.imwrite(os.path.join(out_dir, stem + ".tif"), amp.astype(np.float32))
+        meta = {
+            "processor_version": processors[i % len(processors)],
+            "sensor": "S1C",
+            "nominal_resolution": 3.0,
+            "pixel_spacing": 10.0,
+            "acquisition_mode": "IW",
+            "crs": "EPSG:4326",
+            "acquisition_time": (base_time + timedelta(days=i)).isoformat() + "Z",
+        }
+        with open(os.path.join(out_dir, stem + ".json"), "w", encoding="utf-8") as fh:
+            json.dump(meta, fh, ensure_ascii=False, indent=2)
+    print(f"已生成数据集 {out_dir}/（{n} 张 TIFF + 同茎 JSON 边车）")
+
+
 if __name__ == "__main__":
-    make_single()
-    make_quad()
+    import sys
+    if "--dataset" in sys.argv:
+        make_dataset()
+    else:
+        make_single()
+        make_quad()

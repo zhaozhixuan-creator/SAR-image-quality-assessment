@@ -71,4 +71,8 @@ def run_all(sar: SarImage, config: dict | None = None) -> tuple[list[MetricResul
                 key=f"error.{fn.__module__}", name="内部错误",
                 dimension="系统", reason=f"{type(e).__name__}: {e}",
             ))
+
+    # 回填规格元信息（级别 / 分期 / 判决·标记项 / 测量方法 / 参考实现）
+    from .. import spec
+    spec.annotate(results)
     return results, ctx

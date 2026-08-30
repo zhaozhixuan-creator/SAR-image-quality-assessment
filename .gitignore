@@ -8,3 +8,7 @@ venv/
 # 质检引擎生成产物（可重跑 cli.py 生成）
 *_report.html
 *_report.json
+
+# 数据集样例与质检产物（可重跑 generate_samples.py / dataset_cli.py 生成）
+dataset_demo/
+*_qc/

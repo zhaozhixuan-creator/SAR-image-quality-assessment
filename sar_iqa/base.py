@@ -45,8 +45,15 @@ class MetricResult:
     detail: dict = field(default_factory=dict)  # 附带的次级数据
     raw: Any = None                # 原始对象（剖面、掩膜等，供报告绘图）
 
+    # 规格元信息（由 spec.annotate 按 key 回填，非各维度模块填写）
+    level: str = ""                # 原生产品级别：L0 / L1/SLC / L2 / L3+
+    phase: int = 0                 # 落地分期：1 / 2 / 3
+    kind: str = "decision"         # decision（判决项）/ marker（标记项）
+    method: str = ""               # 测量方法
+    refs: list = field(default_factory=list)  # 参考开源实现（工具键）
+
     def as_dict(self) -> dict:
-        return {
+        d = {
             "key": self.key,
             "name": self.name,
             "dimension": self.dimension,
@@ -57,6 +64,15 @@ class MetricResult:
             "threshold": self.threshold,
             "detail": {k: _jsonable(v) for k, v in self.detail.items()},
         }
+        if self.level:
+            d["level"] = self.level
+        if self.phase:
+            d["phase"] = self.phase
+        if self.kind:
+            d["kind"] = self.kind
+        if self.refs:
+            d["refs"] = self.refs
+        return d
 
 
 def _jsonable(v):

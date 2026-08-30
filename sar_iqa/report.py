@@ -5,7 +5,7 @@ import html
 from datetime import datetime
 
 from .base import MetricResult, STATUS_META, Status
-from . import plots
+from . import plots, ecosystem, spec, pipeline
 
 DIM_ORDER = ["辐射质量", "几何质量", "分辨率与点目标", "噪声与干扰",
              "极化质量", "干涉与相位质量", "完整性与元数据"]
@@ -82,7 +82,8 @@ def _metric_rows(results: list[MetricResult]) -> str:
 
 def generate_html(results: list[MetricResult], ctx, grade: dict,
                   despeckling: dict | None = None,
-                  rule_results: list | None = None) -> str:
+                  rule_results: list | None = None,
+                  pipeline=None, sample: dict | None = None) -> str:
     sar = ctx.sar
 
     # 概览统计
@@ -112,6 +113,7 @@ def generate_html(results: list[MetricResult], ctx, grade: dict,
     </div>
     <div class="legend">
       <span>缺陷：A {grade['counts']['A']} · B {grade['counts']['B']} · C {grade['counts']['C']} · D {grade['counts']['D']}</span>
+      <span>标记项（不计分）{len(grade.get('markers', []))}</span>
       <span>已评估 {grade['evaluated']} 项 / 共 {total} 项</span>
     </div>
     """
@@ -152,8 +154,16 @@ def generate_html(results: list[MetricResult], ctx, grade: dict,
     if rule_results is not None:
         module_section += _rules_section(rule_results)
 
-    # 缺陷清单
+    # 分级流水线概览
+    pipeline_section = _pipeline_section(pipeline) if pipeline else ""
+    # 标记项（可用性元数据，不计分）
+    markers_section = _markers_section(grade)
+    # 缺陷清单（判决项）
     defect_section = _defect_section(grade)
+    # 抽样建议
+    sampling_section = _sampling_section(sample)
+    # 开源生态选型
+    ecosystem_section = _ecosystem_section()
 
     # 需外部数据
     nodata = [r for r in results if r.status == Status.NODATA]
@@ -168,8 +178,9 @@ def generate_html(results: list[MetricResult], ctx, grade: dict,
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     body = (
         f'<header class="hero"><h1>SAR 图像质检报告</h1>'
-        f'<div class="sub">7 维 38 项指标体系 · 单图质检引擎 · 生成于 {now}</div></header>'
-        f"{cards}{input_info}{''.join(dim_sections)}{module_section}{defect_section}{nodata_section}"
+        f'<div class="sub">7 维 38 项指标体系 · 分级质检流水线 · 单图质检引擎 · 生成于 {now}</div></header>'
+        f"{cards}{input_info}{pipeline_section}{''.join(dim_sections)}{module_section}"
+        f"{markers_section}{defect_section}{sampling_section}{ecosystem_section}{nodata_section}"
         f'<div class="footer">SAR-IQA · 单图质检引擎 v0.1 · 结果基于单张图像，最终验收需完整流水线（角反射器/时序/干涉/原始回波）</div>'
     )
     return (
@@ -247,4 +258,70 @@ def _defect_section(grade: dict) -> str:
         )
     return (f"<section><h2>缺陷清单（超差比例 → A/B/C/D）</h2>"
             f"<table><thead><tr><th>指标</th><th>维度</th><th>缺陷类</th><th>数值</th><th>说明</th></tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table></section>")
+
+
+def _pipeline_section(pr) -> str:
+    """分级质检流水线概览：当前产品级 + 各级指标数 + 跨级告警 + 分期。"""
+    lv_rows = "".join(
+        f"<tr><td><b>{pipeline.LEVEL_LABELS.get(lv, lv)}</b></td>"
+        f"<td class='mono'>{pr.level_counts.get(lv, 0)} 项</td>"
+        f"<td class='mono'>{pr.level_evaluated.get(lv, 0)} 项</td></tr>"
+        for lv in spec.LEVELS
+    )
+    cross = ""
+    if pr.cross_keys:
+        cross = (f"<p class='reason'>⚠ 跨级测量告警：以下指标非「{pipeline.LEVEL_LABELS.get(pr.level, pr.level)}」"
+                 f"原生指标，其数值不可与规格比对——{', '.join(pr.cross_keys)}。</p>")
+    phase = " · ".join(f"第 {p} 期 {pr.phase_counts.get(p, 0)} 项" for p in (1, 2, 3))
+    return (f"<section><h2>分级质检流水线</h2>"
+            f"<p class='reason'>当前产品级：<b>{pipeline.LEVEL_LABELS.get(pr.level, pr.level)}</b>"
+            f"（原生指标 {len(pr.native_keys)} 项）；分阶段落地路径：{phase}。</p>"
+            f"<table><thead><tr><th>产品级</th><th>指标数</th><th>已评估</th></tr></thead>"
+            f"<tbody>{lv_rows}</tbody></table>{cross}</section>")
+
+
+def _markers_section(grade: dict) -> str:
+    """标记项（场景相关退化）：只作可用性元数据，不计分。"""
+    markers = grade.get("markers", [])
+    if not markers:
+        return ""
+    rows = "".join(
+        f"<tr><td><b>{html.escape(m['name'])}</b></td><td>{html.escape(m['dimension'])}</td>"
+        f"<td class='mono'>{_fmt(m['value'])} {html.escape(m['unit'] or '')}</td>"
+        f"<td class='reason'>{html.escape(m['reason'])}</td></tr>"
+        for m in markers
+    )
+    return (f"<section><h2>标记项（可用性元数据，不计分）</h2>"
+            f"<p class='reason'>以下为场景相关退化（RFI / 叠掩阴影 / 低相干区），"
+            f"仅随产品发布作可用性元数据，由下游决定接受与否，不纳入缺陷评分（方案 §五.4）。</p>"
+            f"<table><thead><tr><th>指标</th><th>维度</th><th>数值</th><th>说明</th></tr></thead>"
+            f"<tbody>{rows}</tbody></table></section>")
+
+
+def _sampling_section(sample: dict | None) -> str:
+    """GB/T 24356 抽样建议。"""
+    if not sample:
+        return ""
+    return (f"<section><h2>抽样建议（GB/T 24356）</h2>"
+            f"<p class='reason'>{html.escape(sample['reason'])}</p></section>")
+
+
+def _ecosystem_section() -> str:
+    """开源生态选型与许可合规。"""
+    s = ecosystem.compliance_summary()
+    order = [ecosystem.PERMISSIVE, ecosystem.GPL, ecosystem.CHECK,
+             ecosystem.NONCOMM, ecosystem.DATA]
+    rows = []
+    for cat in order:
+        names = s["by_category"].get(cat, [])
+        if not names:
+            continue
+        tools = "、".join(t.repo for t in (ecosystem.get_tool(n) for n in names) if t)
+        note = ecosystem.COMPLIANCE_NOTE[cat]
+        rows.append(f"<tr><td><b>{cat}</b></td><td>{html.escape(tools)}</td>"
+                    f"<td class='reason'>{html.escape(note)}</td></tr>")
+    return (f"<section><h2>开源生态选型与许可合规</h2>"
+            f"<p class='reason'>共登记 {s['total']} 个参考实现；各指标的「实现」引用见指标行 refs 字段。</p>"
+            f"<table><thead><tr><th>类别</th><th>工具</th><th>合规提示</th></tr></thead>"
             f"<tbody>{''.join(rows)}</tbody></table></section>")
