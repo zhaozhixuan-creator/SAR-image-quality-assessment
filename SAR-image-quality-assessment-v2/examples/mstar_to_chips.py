@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把真实 MSTAR 数据转成 v2 切片口径，替换仿真替身。
+"""把真实 MSTAR 数据转成 v2 切片口径。
 
 数据来源：GitHub 仓库 jwcalder/MSTAR-Active-Learning 的 Data/SAR10{a,b,c}.npz，
 是 SDMS 官方公开 MSTAR mixed-targets 的预处理结果（88×88 幅度+相位 float 切片）。
@@ -10,14 +10,14 @@
   - 固定俯角（默认 17°，SOC）
   - 幅度切片 resize 到 128×128
 
-输出与 generate_mstar_like.py 相同的目录结构（默认 mstar_real/）：
+输出目录结构（默认 mstar_real/）：
   train_real.npy / train_angles.npy   —— 72×类数 张（10 类=720 / 5 类=360），供 R(·) 与 E_asc 预训练
   real_<k>.npy                        —— 干净真实切片（评估集）
   real2_<k>.npy                       —— 同一切片加 2% 乘性扰动（“第二次观测”自洽参照）
   fake_<k>.npy                        —— 同类别、角度 +offset 的切片施加退化
   angles.json                         —— 评估集“被要求角度” + angle_offset
 
-说明：真实 MSTAR 每角度只有一次观测，无法像仿真那样换斑点种子生成 real2，
+说明：真实 MSTAR 每角度只有一次观测，无法换斑点种子生成 real2，
 故 real2 用轻微乘性扰动模拟“近乎相同的第二次观测”，仅用于验证指标自洽性。
 fake 用「同类别、真实角度 = 要求角度 + offset 的切片」+ 退化，模拟生成器角度控制误差。
 """

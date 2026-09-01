@@ -7,7 +7,7 @@
 > v2 评估的是「生成图像集」与「真实图像集」在六项指标上的**分布一致性**，用于给生成模型打分，
 > 而非对单张 SAR 图像做 7 维 38 项质检。
 
-验证数据支持两种：**真实 MSTAR**（默认）与**仿真 MSTAR-like**（替身）。
+验证数据为**真实 MSTAR**。
 
 ---
 
@@ -38,7 +38,6 @@ SAR-image-quality-assessment-v2/
 │   ├── download_mstar.py           # 下载真实 MSTAR .npz（分片并行，国内可用）
 │   ├── mstar_to_chips.py           # 真实 MSTAR → v2 切片口径（mstar_real/）
 │   ├── inspect_mstar.py            # 核查 .npz 类名/角度/俯角分布
-│   ├── generate_mstar_like.py      # 生成仿真 MSTAR-like 切片（mstar_like/）
 │   └── eval_gan_metrics.py         # 端到端：训练 R/E_asc → 计算六项指标 → 对照表
 ├── docs/
 │   └── 11-生成模型评估指标.md        # 六项指标公式、实现要点、运行说明
@@ -64,7 +63,7 @@ pip install -r requirements.txt
 cd SAR-image-quality-assessment-v2
 python examples/download_mstar.py      # ① 下载 .npz → mstar_raw/（约 256 MB，分片并行）
 python examples/mstar_to_chips.py      # ② 转换 → mstar_real/（默认 10 类 × 72 角，128×128）
-python examples/eval_gan_metrics.py    # ③ 训练 R/E_asc 并计算六项指标（--data 默认 mstar_real）
+python examples/eval_gan_metrics.py    # ③ 训练 R/E_asc 并计算六项指标
 ```
 
 `download_mstar.py` 从 GitHub 仓库 [jwcalder/MSTAR-Active-Learning](https://github.com/jwcalder/MSTAR-Active-Learning)
@@ -73,13 +72,6 @@ python examples/eval_gan_metrics.py    # ③ 训练 R/E_asc 并计算六项指�
 `mstar_to_chips.py` 默认转换全部 10 类（2S1/BMP2/BRDM2/BTR60/BTR70/D7/T62/T72/ZIL131/ZSU23-4）
 × 72 方位角（0–355°，5° 网格最近邻），17° 俯角，幅度切片 resize 到 128×128；
 `--classes paper` 则只取论文 §3.1.1 的 5 类（2S1/BRDM2/D7/T62/ZIL131）。
-
-### 方式 B：仿真 MSTAR-like 替身
-
-```bash
-python examples/generate_mstar_like.py   # 生成 mstar_like/
-python examples/eval_gan_metrics.py --data mstar_like
-```
 
 ## 五、预期输出（已在本机验证）
 
@@ -112,7 +104,7 @@ CMAE：退化列（34.00°）明显高于自洽列（12.75°），说明角度�
 2. **ΔENL/BVE 在强度域（幅度²）计算**。ENL=μ²/σ² 的经典定义在强度/功率域。
 3. **E_asc 训练协议论文未公开**。以浅层卷积编码器用重构自监督在真实切片上预训练作替身。
 4. **FID 做 PCA 降维**。样本数远小于 Inception 的 2048 维，先联合 PCA 到 `min(64, N−1)` 维再算 Fréchet 距离。
-5. **real2 自洽参照**。真实 MSTAR 每角度只有一次观测，无法像仿真那样换斑点种子；
+5. **real2 自洽参照**。真实 MSTAR 每角度只有一次观测，无法换斑点种子；
    这里用 2% 乘性扰动模拟「近乎相同的第二次观测」，仅用于验证指标自洽性。
 6. **R(·) 估角残差**。R 是论文口径的轻量 4 卷积块网络（16/32/64/128 → GAP → 2FC），
    在真实 10 类、5° 采样的 720 张上训练 300 epoch，估角残差约 13°（5 类子集约 7–8°）；CMAE 通过

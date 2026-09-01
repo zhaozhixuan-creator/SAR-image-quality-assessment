@@ -2,14 +2,12 @@
 """端到端验证论文 §3.1.4 六项生成模型评估指标。
 
 运行：
-    python examples/generate_mstar_like.py        # 生成仿真 MSTAR-like 切片（mstar_like/）
     python examples/mstar_to_chips.py             # 真实 MSTAR → 切片（mstar_real/，需先下载 .npz）
     python examples/eval_gan_metrics.py           # 训练 R/E_asc 并计算六项指标
 
 说明：R(·) 与 E_asc 是论文中的「预训练辅助网络」。本脚本在真实切片上按论文口径预训练
-（R 仅在真实图上训练、评估时冻结；E_asc 以重构自监督训练）。数据源有两种：
-- mstar_real/（真实 MSTAR，默认，mstar_to_chips.py 生成）
-- mstar_like/（仿真替身，generate_mstar_like.py 生成，--data mstar_like）
+（R 仅在真实图上训练、评估时冻结；E_asc 以重构自监督训练）。数据源为 mstar_real/
+（真实 MSTAR，mstar_to_chips.py 生成）。
 这里输出的是「实现正确性 + 指标行为」验证，数值不与论文 Table 4 直接可比。
 
 输出两列对照：
@@ -28,6 +26,8 @@ import numpy as np
 # 允许从 examples/ 下运行：把项目根目录加入导入路径，以 import gan_metrics
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+DATA = "mstar_real"  # 验证数据目录（mstar_to_chips.py 生成）
+
 
 def load(dirpath, prefix):
     names = sorted(f for f in os.listdir(dirpath)
@@ -37,7 +37,6 @@ def load(dirpath, prefix):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default="mstar_real")
     ap.add_argument("--angle-epochs", type=int, default=300)
     ap.add_argument("--asc-epochs", type=int, default=25)
     ap.add_argument("--fid-batch", type=int, default=8)
@@ -46,18 +45,18 @@ def main():
 
     import gan_metrics as gm
 
-    real = load(args.data, "real_")
-    real2 = load(args.data, "real2_")
-    fake = load(args.data, "fake_")
-    with open(os.path.join(args.data, "angles.json")) as fh:
+    real = load(DATA, "real_")
+    real2 = load(DATA, "real2_")
+    fake = load(DATA, "fake_")
+    with open(os.path.join(DATA, "angles.json")) as fh:
         meta = json.load(fh)
     angles = np.asarray(meta["angles"])
     offset = meta.get("angle_offset", 5.0)
     n = len(real)
     assert n == len(fake) == len(angles), "real/fake/angles 数量不一致"
 
-    train_real = [x for x in np.load(os.path.join(args.data, "train_real.npy"))]
-    train_angles = np.load(os.path.join(args.data, "train_angles.npy")).tolist()
+    train_real = [x for x in np.load(os.path.join(DATA, "train_real.npy"))]
+    train_angles = np.load(os.path.join(DATA, "train_angles.npy")).tolist()
     print(f"读入评估集 real/fake 各 {n} 张；训练集（真实）{len(train_real)} 张")
 
     # 1) 预训练方位角估计器 R（仅在真实图上）
