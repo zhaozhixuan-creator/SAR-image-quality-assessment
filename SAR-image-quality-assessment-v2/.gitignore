@@ -7,3 +7,7 @@ venv/
 
 # 生成模型评估指标的仿真切片（可重跑 examples/generate_mstar_like.py 生成）
 mstar_like/
+
+# 真实 MSTAR 数据（原始 .npz 与转换后的切片，数据体量大、非本仓库源码，不入库）
+mstar_raw/
+mstar_real/

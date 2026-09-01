@@ -2,12 +2,15 @@
 """端到端验证论文 §3.1.4 六项生成模型评估指标。
 
 运行：
-    python examples/generate_mstar_like.py        # 生成仿真 MSTAR-like 切片
+    python examples/generate_mstar_like.py        # 生成仿真 MSTAR-like 切片（mstar_like/）
+    python examples/mstar_to_chips.py             # 真实 MSTAR → 切片（mstar_real/，需先下载 .npz）
     python examples/eval_gan_metrics.py           # 训练 R/E_asc 并计算六项指标
 
 说明：R(·) 与 E_asc 是论文中的「预训练辅助网络」。本脚本在真实切片上按论文口径预训练
-（R 仅在真实图上训练、评估时冻结；E_asc 以重构自监督训练）。真实 MSTAR 不可得，切片为
-仿真替身，因此这里输出的是「实现正确性 + 指标行为」验证，数值不与论文 Table 4 直接可比。
+（R 仅在真实图上训练、评估时冻结；E_asc 以重构自监督训练）。数据源有两种：
+- mstar_real/（真实 MSTAR，默认，mstar_to_chips.py 生成）
+- mstar_like/（仿真替身，generate_mstar_like.py 生成，--data mstar_like）
+这里输出的是「实现正确性 + 指标行为」验证，数值不与论文 Table 4 直接可比。
 
 输出两列对照：
 - real-real2：自洽性检查（同角度、不同斑点的两张干净图），应接近理想值，验证实现正确。
@@ -34,8 +37,8 @@ def load(dirpath, prefix):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default="mstar_like")
-    ap.add_argument("--angle-epochs", type=int, default=40)
+    ap.add_argument("--data", default="mstar_real")
+    ap.add_argument("--angle-epochs", type=int, default=300)
     ap.add_argument("--asc-epochs", type=int, default=25)
     ap.add_argument("--fid-batch", type=int, default=8)
     ap.add_argument("--no-fid", action="store_true", help="跳过 FID（CPU 上 Inception 较慢）")
@@ -89,13 +92,15 @@ def main():
 
     cmae_self = gm.cmae(phi_real, angles)
     cmae_degr = gm.cmae(phi_fake, angles)
-    print(f"{'CMAE°':<7}{cmae_self:>18.2f}{cmae_degr:>18.2f}    自洽≈0(估角) / 退化≈offset({offset:g})")
+    print(f"{'CMAE°':<7}{cmae_self:>18.2f}{cmae_degr:>18.2f}    自洽小(估角残差) / 退化-自洽≈offset({offset:g})")
     print("==========================================")
     print("\n解读：")
     print(" - real-real2（自洽）列：同角度、不同斑点的两张干净图，接近理想值 → 实现正确。")
     print(" - real-fake（退化）列：明显偏离理想值 → 指标能区分生成质量。")
     print(" - CMAE 由 R 反推角度后与「被要求角度」比循环误差；")
-    print("   退化图实际渲染角 = 要求角 + offset，故 CMAE≈offset 说明角度控制误差被正确捕捉。")
+    print("   退化图实际渲染角 = 要求角 + offset，故「退化列 − 自洽列」≈ offset（近似），")
+    print("   说明角度控制误差被正确捕捉（自洽列的非零值 = R 自身的估角残差）。")
+    print("   注：退化施加的模糊/噪声也会偏移 R 估角，10 类时该效应可能让差值 > offset。")
 
 
 if __name__ == "__main__":
