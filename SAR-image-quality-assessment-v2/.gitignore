@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 生成模型评估指标的仿真切片（可重跑 examples/generate_mstar_like.py 生成）
+mstar_like/
