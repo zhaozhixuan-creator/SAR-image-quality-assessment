@@ -165,3 +165,102 @@ def fid(real, fake, feature_extractor=None, batch: int = 16, pca_dim: int = 64,
     mu_r, sig_r = pr.mean(0), np.cov(pr, rowvar=False)
     mu_g, sig_g = pg.mean(0), np.cov(pg, rowvar=False)
     return _frechet(mu_r, sig_r, mu_g, sig_g)
+
+
+# ---------- 逐像素 / 结构 FR 指标（补充：arXiv 2411.05027 全参考 IQA）----------
+def _pair_01(r, f):
+    """逐对归一化到 [0,1] 幅度域。
+
+    - 含负值的输入视为模型输出空间 [-1,1]，先 (x+1)/2 映射到 [0,1]（等价 png 灰度映射）；
+    - 再按该对两图的联合最大值缩放，保证 data_range=1 口径一致（与 ssim() 同思路）。
+    """
+    r = to_2d(r).astype(np.float64)
+    f = to_2d(f).astype(np.float64)
+    if r.min() < 0.0:
+        r = (r + 1.0) / 2.0
+    if f.min() < 0.0:
+        f = (f + 1.0) / 2.0
+    gmax = max(float(r.max()), float(f.max()), 1e-9)
+    return r / gmax, f / gmax
+
+
+def mse(real, fake):
+    """MSE = (1/N)Σ mean((r−f)²)，[0,1] 域逐对平均。理想 0。"""
+    vals = []
+    for r, f in zip(real, fake):
+        a, b = _pair_01(r, f)
+        vals.append(float(np.mean((a - b) ** 2)))
+    return float(np.mean(vals))
+
+
+def rmse(real, fake):
+    """RMSE = √MSE，量纲与归一化灰度一致。理想 0。"""
+    return float(np.sqrt(mse(real, fake)))
+
+
+def psnr(real, fake, data_range: float = 1.0):
+    """PSNR = 10·log10(DR²/MSE)，DR=1（[0,1] 域）。理想 +∞。"""
+    m = mse(real, fake)
+    if m <= 0.0:
+        return float("inf")
+    return float(10.0 * np.log10(data_range * data_range / m))
+
+
+def ncc(real, fake):
+    """NCC 归一化互相关 ∈ [−1,1]，1=完全线性相关。逐对平均。理想 1。"""
+    vals = []
+    for r, f in zip(real, fake):
+        a, b = _pair_01(r, f)
+        a = a.ravel() - a.mean()
+        b = b.ravel() - b.mean()
+        den = float(np.sqrt((a @ a) * (b @ b)))
+        vals.append(0.0 if den <= 0.0 else float((a @ b) / den))
+    return float(np.mean(vals))
+
+
+def uqi(real, fake):
+    """UQI 通用质量指数（Wang&Bovik 2002）= 相关×亮度×对比度三因子。理想 1。"""
+    vals = []
+    eps = 1e-12
+    for r, f in zip(real, fake):
+        a, b = _pair_01(r, f)
+        a = a.ravel()
+        b = b.ravel()
+        mu_a = float(a.mean())
+        mu_b = float(b.mean())
+        var_a = float(a.var())
+        var_b = float(b.var())
+        cov_ab = float(np.mean((a - mu_a) * (b - mu_b)))
+        vals.append((4.0 * cov_ab * mu_a * mu_b)
+                    / ((var_a + var_b + eps) * (mu_a ** 2 + mu_b ** 2 + eps)))
+    return float(np.mean(vals))
+
+
+def ms_ssim(real, fake, data_range: float = 1.0):
+    """MS-SSIM 多尺度结构相似度（pytorch-msssim）。理想 1。"""
+    import torch
+
+    from pytorch_msssim import ssim as _ms_ssim
+
+    vals = []
+    for r, f in zip(real, fake):
+        a, b = _pair_01(r, f)
+        ta = torch.from_numpy(a.astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        tb = torch.from_numpy(b.astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        vals.append(float(_ms_ssim(ta, tb, data_range=data_range, size_average=True)))
+    return float(np.mean(vals))
+
+
+def fsim(real, fake, data_range: float = 1.0):
+    """FSIM 特征相似度（piq，相位一致性 + 梯度幅度）。理想 1。"""
+    import torch
+
+    from piq import fsim as _fsim
+
+    vals = []
+    for r, f in zip(real, fake):
+        a, b = _pair_01(r, f)
+        ta = torch.from_numpy(a.astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        tb = torch.from_numpy(b.astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        vals.append(float(_fsim(ta, tb, data_range=data_range, chromatic=False).item()))
+    return float(np.mean(vals))

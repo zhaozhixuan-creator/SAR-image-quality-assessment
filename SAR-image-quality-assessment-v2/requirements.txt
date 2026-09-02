@@ -5,3 +5,8 @@ scipy>=1.10
 scikit-image>=0.21
 torch>=2.0
 torchvision>=0.15
+
+# 补充 FR 全参考指标（MSE/RMSE/PSNR/NCC/UQI/MS-SSIM/FSIM，arXiv 2411.05027）
+sewar>=0.4          # UQI/PSNR 等（本项目仅作对照，FSIM 走 piq）
+pytorch-msssim>=1.0 # MS-SSIM
+piq>=0.8            # FSIM（相位一致性 + 梯度幅度）

@@ -17,10 +17,12 @@ from .models import (
     train_angle_estimator,
     train_asc_extractor,
 )
-from .metrics import fid, ssim, afs, delta_enl, bve, cmae, enl, estimate_angles
+from .metrics import (fid, ssim, afs, delta_enl, bve, cmae, enl, estimate_angles,
+                      mse, rmse, psnr, ncc, uqi, ms_ssim, fsim)
 
 __all__ = [
     "fid", "ssim", "afs", "delta_enl", "bve", "cmae", "enl", "estimate_angles",
+    "mse", "rmse", "psnr", "ncc", "uqi", "ms_ssim", "fsim",
     "AspectAngleEstimator", "ASCExtractor", "ASCAutoencoder",
     "train_angle_estimator", "train_asc_extractor", "InceptionV3",
     "EPS", "to_2d", "target_background_masks", "gray_to_rgb", "crop_target",
