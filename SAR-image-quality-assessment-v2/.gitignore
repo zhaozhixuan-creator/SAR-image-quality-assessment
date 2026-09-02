@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 真实 MSTAR 数据（原始 .npz 与转换后的切片，数据体量大、非本仓库源码，不入库）
+mstar_raw/
+mstar_real/

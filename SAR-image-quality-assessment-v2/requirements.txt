@@ -1,0 +1,7 @@
+# 生成模型评估指标（论文 §3.1.4 六项指标）所需依赖
+# 无 GPU 时可用 CPU 版 torch / torchvision（本工程已在纯 CPU 环境验证）
+numpy>=1.24
+scipy>=1.10
+scikit-image>=0.21
+torch>=2.0
+torchvision>=0.15
