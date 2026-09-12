@@ -1,0 +1,13 @@
+# 统一文本文件换行为 LF，避免 Windows CRLF 造成 diff 噪音
+* text=auto eol=lf
+
+# 二进制数据文件不做换行符转换
+*.tif binary
+*.tiff binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.npy binary
+*.npz binary
+*.pkl binary
+*.pickle binary
