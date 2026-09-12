@@ -1,0 +1,16 @@
+#### baseline network structures
+network:
+  which_model: BaselineXUNetWrapper
+  setting:
+    ch: 128
+    ch_mult: [1, 2, 2, 4]
+    emb_ch: 1024
+    num_res_blocks: 3
+    attn_resolutions: [2, 3, 4]
+    attn_heads: 4
+    dropout: 0.1
+    use_pos_emb: True
+    use_ref_pose_emb: True
+    pose_radius: 1.0
+    pinhole_focal: 1.0
+    reduce_rgb_output: mean

@@ -1,0 +1,19 @@
+services:
+  nvsynthesis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nvsynthesis:cuda12.1
+    working_dir: /workspace/jk_angle
+    shm_size: "16gb"
+    ipc: host
+    stdin_open: true
+    tty: true
+    gpus: all
+    environment:
+      PYTHONUNBUFFERED: "1"
+      NVIDIA_VISIBLE_DEVICES: all
+    volumes:
+      - ./data:/workspace/jk_angle/data
+      - ./experiments:/workspace/jk_angle/experiments
+      - ./results:/workspace/jk_angle/results

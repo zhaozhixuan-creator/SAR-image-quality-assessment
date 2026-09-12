@@ -1,0 +1,398 @@
+import argparse
+import json
+import math
+import sys
+import zipfile
+from pathlib import Path
+from typing import Dict, List, Sequence, Tuple
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import dnnlib
+import legacy
+import numpy as np
+import torch
+from PIL import Image
+
+
+TRAINING_RUNS_DIR = PROJECT_ROOT / "training-runs"
+DEFAULT_NETWORK_NAME = "1.pkl"
+DEFAULT_REAL_DATASET = PROJECT_ROOT / "datasets" / "t32_t72-128.zip"
+DEFAULT_OUTDIR = PROJECT_ROOT / "validation_t32_t72_generate"
+CLASS_SPECS: Tuple[Tuple[str, int], ...] = (("T32", 0), ("T72", 1))
+VALIDATION_ANGLE_START_DEG = 5.0
+VALIDATION_ANGLE_STEP_DEG = 10.0
+NUM_VALIDATION_ANGLES = 36
+VALIDATION_ANGLES_DEG = tuple(
+    VALIDATION_ANGLE_START_DEG + idx * VALIDATION_ANGLE_STEP_DEG
+    for idx in range(NUM_VALIDATION_ANGLES)
+)
+ANGLE_START_INDEX = 2
+
+
+def parse_seed_list(seed_spec: str) -> List[int]:
+    seeds: List[int] = []
+    for part in seed_spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            start_text, end_text = part.split("-", 1)
+            start = int(start_text)
+            end = int(end_text)
+            if end < start:
+                raise ValueError(f"Invalid seed range: {part}")
+            seeds.extend(range(start, end + 1))
+        else:
+            seeds.append(int(part))
+    if not seeds:
+        raise ValueError("At least one seed is required")
+    return seeds
+
+
+def parse_angles(angle_text: str) -> List[float]:
+    angles = [float(x.strip()) for x in angle_text.split(",") if x.strip()]
+    if not angles:
+        raise ValueError("At least one angle is required")
+    return angles
+
+
+def resolve_project_path(path_text: str) -> Path:
+    path = Path(path_text)
+    if path.is_absolute():
+        return path
+    return PROJECT_ROOT / path
+
+
+def resolve_network_path(path_text: str) -> Path:
+    network_path = Path(path_text)
+    if network_path.is_absolute():
+        return network_path
+
+    explicit_project_path = PROJECT_ROOT / network_path
+    if explicit_project_path.is_file() or len(network_path.parts) > 1:
+        return explicit_project_path
+
+    matches = sorted(
+        TRAINING_RUNS_DIR.rglob(path_text),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    ) if TRAINING_RUNS_DIR.is_dir() else []
+    if matches:
+        return matches[0]
+
+    return PROJECT_ROOT / path_text
+
+
+def angle_dir_name(angle_deg: float) -> str:
+    return f"angle_{angle_deg:07.3f}".replace(".", "p")
+
+
+def label_to_angle_deg(label: Sequence[float]) -> float:
+    angle_rad = math.atan2(float(label[ANGLE_START_INDEX]), float(label[ANGLE_START_INDEX + 1]))
+    return float(math.degrees(angle_rad) % 360.0)
+
+
+def circular_distance_deg(angle_a: float, angle_b: float) -> float:
+    return abs((angle_a - angle_b + 180.0) % 360.0 - 180.0)
+
+
+def build_condition_label(generator_c_dim: int, class_idx: int, angle_deg: float) -> np.ndarray:
+    required_dim = ANGLE_START_INDEX + 2
+    if generator_c_dim < required_dim:
+        raise RuntimeError(
+            f"Generator c_dim={generator_c_dim}, but this script requires "
+            f"labels [T32, T72, sin(angle), cos(angle)] with dim >= {required_dim}."
+        )
+
+    label = np.zeros((generator_c_dim,), dtype=np.float32)
+    label[int(class_idx)] = 1.0
+    angle_rad = math.radians(float(angle_deg))
+    label[ANGLE_START_INDEX] = math.sin(angle_rad)
+    label[ANGLE_START_INDEX + 1] = math.cos(angle_rad)
+    return label
+
+
+def tensor_to_pil_image(image_tensor: torch.Tensor) -> Image.Image:
+    image = image_tensor.detach().cpu()
+    image = (image.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+    image_np = image[0].numpy()
+    if image_np.ndim == 3 and image_np.shape[2] == 1:
+        return Image.fromarray(image_np[:, :, 0], mode="L")
+    return Image.fromarray(image_np, mode="RGB")
+
+
+def load_generator(network_path: Path, device: torch.device) -> torch.nn.Module:
+    with dnnlib.util.open_url(str(network_path), verbose=True) as fp:
+        generator = legacy.load_network_pkl(fp)["G_ema"].to(device)
+    generator.eval().requires_grad_(False)
+    return generator
+
+
+def generate_images(
+    generator: torch.nn.Module,
+    device: torch.device,
+    seeds: List[int],
+    class_idx: int,
+    angle_deg: float,
+    outdir: Path,
+    truncation_psi: float,
+    noise_mode: str,
+) -> List[str]:
+    outdir.mkdir(parents=True, exist_ok=True)
+    label_np = build_condition_label(
+        generator_c_dim=int(generator.c_dim),
+        class_idx=class_idx,
+        angle_deg=angle_deg,
+    )
+    label = torch.from_numpy(label_np).unsqueeze(0).to(device)
+
+    generated_paths = []
+    for seed in seeds:
+        z = torch.from_numpy(
+            np.random.RandomState(seed).randn(1, int(generator.z_dim)).astype(np.float32)
+        ).to(device)
+        with torch.no_grad():
+            image_tensor = generator(
+                z,
+                label,
+                truncation_psi=truncation_psi,
+                noise_mode=noise_mode,
+            )
+        image = tensor_to_pil_image(image_tensor)
+        save_path = outdir / f"seed{seed:04d}.png"
+        image.save(save_path)
+        generated_paths.append(str(save_path.relative_to(PROJECT_ROOT)).replace("\\", "/"))
+    return generated_paths
+
+
+def load_dataset_rows(dataset_path: Path) -> List[Dict[str, object]]:
+    with zipfile.ZipFile(dataset_path, "r") as zf:
+        metadata = json.loads(zf.read("dataset.json").decode("utf-8"))
+
+    labels = metadata.get("labels")
+    if labels is None:
+        raise RuntimeError(f"Dataset has no labels: {dataset_path}")
+
+    rows: List[Dict[str, object]] = []
+    class_dim = len(CLASS_SPECS)
+    for dataset_index, row in enumerate(labels):
+        image_name, label = row
+        if len(label) < ANGLE_START_INDEX + 2:
+            raise RuntimeError(
+                f"Label for {image_name} has dim {len(label)}, "
+                f"expected at least {ANGLE_START_INDEX + 2}"
+            )
+        class_idx = max(range(class_dim), key=lambda idx: float(label[idx]))
+        rows.append(
+            {
+                "dataset_index": int(dataset_index),
+                "image_name": str(image_name),
+                "label": [float(x) for x in label],
+                "class_idx": int(class_idx),
+                "angle_deg": label_to_angle_deg(label),
+            }
+        )
+    return rows
+
+
+def select_nearest_real(
+    rows: Sequence[Dict[str, object]],
+    class_idx: int,
+    target_angle_deg: float,
+) -> Dict[str, object]:
+    candidates = [row for row in rows if int(row["class_idx"]) == int(class_idx)]
+    if not candidates:
+        raise RuntimeError(f"No real samples found for class index {class_idx}")
+    return min(
+        candidates,
+        key=lambda row: (
+            circular_distance_deg(float(row["angle_deg"]), target_angle_deg),
+            int(row["dataset_index"]),
+        ),
+    )
+
+
+def build_real_metadata(
+    row: Dict[str, object],
+    save_dir: Path,
+    class_name: str,
+    class_idx: int,
+    target_angle_deg: float,
+) -> Dict[str, object]:
+    image_name = str(row["image_name"])
+    matched_angle = float(row["angle_deg"])
+    return {
+        "class_name": class_name,
+        "class_idx": int(class_idx),
+        "target_angle_deg": float(target_angle_deg),
+        "matched_angle_deg": matched_angle,
+        "angle_error_deg": circular_distance_deg(matched_angle, float(target_angle_deg)),
+        "dataset_index": int(row["dataset_index"]),
+        "archive_image": image_name,
+        "label": row["label"],
+        "real_path": str((save_dir / "real.png").relative_to(PROJECT_ROOT)).replace("\\", "/"),
+    }
+
+
+def save_real_sample(
+    zf: zipfile.ZipFile,
+    row: Dict[str, object],
+    save_dir: Path,
+    class_name: str,
+    class_idx: int,
+    target_angle_deg: float,
+) -> Dict[str, object]:
+    save_dir.mkdir(parents=True, exist_ok=True)
+    image_name = str(row["image_name"])
+    with zf.open(image_name, "r") as src:
+        (save_dir / "real.png").write_bytes(src.read())
+
+    metadata = build_real_metadata(
+        row=row,
+        save_dir=save_dir,
+        class_name=class_name,
+        class_idx=class_idx,
+        target_angle_deg=target_angle_deg,
+    )
+    (save_dir / "real_metadata.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return metadata
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Validate T32/T72 generation by loading G_ema directly and matching nearest real samples."
+    )
+    parser.add_argument("--network", default=DEFAULT_NETWORK_NAME, help="Network pkl path, default: 1.pkl.")
+    parser.add_argument("--real-data", default=str(DEFAULT_REAL_DATASET), help="Dataset zip for nearest real images.")
+    parser.add_argument("--outdir", default=str(DEFAULT_OUTDIR), help="Validation output directory.")
+    parser.add_argument("--seeds", default="0", help="Seed list, e.g. 0, 0-3, or 0,4,8.")
+    parser.add_argument(
+        "--angles",
+        default=",".join(str(int(x)) for x in VALIDATION_ANGLES_DEG),
+        help="Comma-separated target angles in degrees.",
+    )
+    parser.add_argument("--trunc", type=float, default=1.0, help="Truncation psi.")
+    parser.add_argument(
+        "--noise-mode",
+        choices=["const", "random", "none"],
+        default="const",
+        help="Noise mode used by the generator.",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Print work without generating or writing files.")
+    args = parser.parse_args()
+
+    network_path = resolve_network_path(args.network)
+    real_dataset = resolve_project_path(args.real_data)
+    out_root = resolve_project_path(args.outdir)
+    angles = parse_angles(args.angles)
+    seeds = parse_seed_list(args.seeds)
+
+    if not real_dataset.is_file():
+        raise FileNotFoundError(f"Real dataset not found: {real_dataset}")
+    if not network_path.is_file():
+        message = f"Network not found: {network_path}"
+        if args.dry_run:
+            print(f"Warning: {message}")
+        else:
+            raise FileNotFoundError(message)
+
+    print(f"Project root: {PROJECT_ROOT}")
+    print(f"Network: {network_path}")
+    print(f"Real dataset: {real_dataset}")
+    print(f"Output root: {out_root}")
+    print(f"Angles: {', '.join(f'{x:g}' for x in angles)}")
+    print(f"Seeds: {seeds}")
+
+    real_rows = load_dataset_rows(real_dataset)
+    manifest = {
+        "network": str(network_path).replace("\\", "/"),
+        "real_dataset": str(real_dataset).replace("\\", "/"),
+        "angle_start": ANGLE_START_INDEX,
+        "seeds": seeds,
+        "classes": [{"name": name, "class_idx": idx} for name, idx in CLASS_SPECS],
+        "items": [],
+    }
+
+    generator = None
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if not args.dry_run:
+        print(f"Device: {device}")
+        generator = load_generator(network_path=network_path, device=device)
+        if int(generator.c_dim) < ANGLE_START_INDEX + 2:
+            raise RuntimeError(
+                f"Loaded generator has c_dim={int(generator.c_dim)}. "
+                f"Expected c_dim >= {ANGLE_START_INDEX + 2} for [T32, T72, sin, cos] labels."
+            )
+
+    with zipfile.ZipFile(real_dataset, "r") as zf:
+        for class_name, class_idx in CLASS_SPECS:
+            for angle_deg in angles:
+                item_outdir = out_root / class_name / angle_dir_name(angle_deg)
+                real_row = select_nearest_real(real_rows, class_idx, float(angle_deg))
+                if args.dry_run:
+                    real_metadata = build_real_metadata(
+                        row=real_row,
+                        save_dir=item_outdir,
+                        class_name=class_name,
+                        class_idx=class_idx,
+                        target_angle_deg=float(angle_deg),
+                    )
+                    generated_paths: List[str] = []
+                else:
+                    real_metadata = save_real_sample(
+                        zf=zf,
+                        row=real_row,
+                        save_dir=item_outdir,
+                        class_name=class_name,
+                        class_idx=class_idx,
+                        target_angle_deg=float(angle_deg),
+                    )
+                    generated_paths = generate_images(
+                        generator=generator,
+                        device=device,
+                        seeds=seeds,
+                        class_idx=class_idx,
+                        angle_deg=float(angle_deg),
+                        outdir=item_outdir,
+                        truncation_psi=float(args.trunc),
+                        noise_mode=str(args.noise_mode),
+                    )
+
+                print(
+                    f"{class_name} target={angle_deg:g} deg -> real "
+                    f"{real_metadata['matched_angle_deg']:.3f} deg "
+                    f"(err={real_metadata['angle_error_deg']:.3f}); out={item_outdir}"
+                )
+                print(
+                    f"Generate {class_name} class={class_idx} angle={angle_deg:g} deg "
+                    f"seeds={seeds} -> {item_outdir}"
+                )
+
+                manifest["items"].append(
+                    {
+                        "class_name": class_name,
+                        "class_idx": class_idx,
+                        "target_angle_deg": float(angle_deg),
+                        "output_dir": str(item_outdir.relative_to(PROJECT_ROOT)).replace("\\", "/"),
+                        "real": real_metadata,
+                        "generated": generated_paths,
+                    }
+                )
+
+    if not args.dry_run:
+        out_root.mkdir(parents=True, exist_ok=True)
+        (out_root / "validation_manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+
+if __name__ == "__main__":
+    main()

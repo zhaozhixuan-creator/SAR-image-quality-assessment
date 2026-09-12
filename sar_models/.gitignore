@@ -1,0 +1,60 @@
+# ===== Python 缓存与编译产物 =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ===== 虚拟环境 =====
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ===== 数据集（大文件，不入库）=====
+data/
+datasets/
+
+# ===== 训练输出 / 结果 / 日志 =====
+results/
+resultsanl/
+training-runs/
+output/
+work_dirs/
+runs/
+sampling/
+*.log
+events.out.tfevents.*
+
+# ===== 模型权重 / 检查点 =====
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.mar
+*.safetensors
+
+# ===== 编译后的可执行文件 =====
+*.exe
+
+# ===== 压缩包 =====
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# ===== 密钥 / 环境变量 =====
+.env
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+
+# ===== 编辑器 / 系统文件 =====
+.vscode/
+.idea/
+.DS_Store
+*.swp

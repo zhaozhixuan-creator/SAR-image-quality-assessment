@@ -1,0 +1,57 @@
+# ===============================
+# 基础路径
+# ===============================
+output:
+  model_path: ./output/image_SSIM_sanshezhongxin
+  status_json: ${output.model_path}/status.json
+  preview_image: ${output.model_path}/preview.png
+  loss_jsonl: ${output.model_path}/loss.jsonl
+
+# ===============================
+# 数据集 & 模型
+# ===============================
+dataset:
+  source_path: ./data/image_SSIM_test
+  white_background: false
+  sh_degree: 3
+  llffhold: 8
+
+# ===============================
+# 训练参数
+# ===============================
+training:
+  iterations: 300000
+  lambda_dssim: 0.3
+  random_background: false
+
+  test_iterations: [1, 1000, 5000, 10000, 20000, 30000]
+  save_iterations: [1, 30000]
+  checkpoint_iterations: []
+
+# ===============================
+# OptimizationParams（保持和 arguments.py 一致）
+# ===============================
+optimization:
+  position_lr_init: 0.00016
+  position_lr_final: 0.0000016
+  position_lr_delay_mult: 0.01
+  position_lr_max_steps: 300000
+
+  feature_lr: 0.0025
+  opacity_lr: 0.05
+  scaling_lr: 0.00025
+  rotation_lr: 0.0001
+  percent_dense: 0.01
+  lambda_dssim: 0.3
+  densify_from_iter: 7000
+  densify_until_iter: 200000
+  densification_interval: 50
+  densify_grad_threshold: 0.0002
+  opacity_reset_interval: 3000
+  random_background: false
+
+# ===============================
+# PipelineParams
+# ===============================
+pipeline:
+  debug: false

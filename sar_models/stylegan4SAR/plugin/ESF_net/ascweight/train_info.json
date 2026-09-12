@@ -1,0 +1,50 @@
+{
+  "best_ckpt": "plugin/ESF_net/ascweight/fold_02/esf_attr_best.pt",
+  "last_ckpt": "plugin/ESF_net/ascweight/fold_05/esf_attr_last.pt",
+  "dataset_zip": "datasets/ascdata.zip",
+  "num_samples": 4939,
+  "k_folds": 5,
+  "best_val": 5.096729546785355,
+  "fold_results": [
+    {
+      "best_val": 5.125563740730286,
+      "best_ckpt": "plugin/ESF_net/ascweight/fold_01/esf_attr_best.pt",
+      "last_ckpt": "plugin/ESF_net/ascweight/fold_01/esf_attr_last.pt",
+      "fold": 1,
+      "train_size": 3951,
+      "val_size": 988
+    },
+    {
+      "best_val": 5.096729546785355,
+      "best_ckpt": "plugin/ESF_net/ascweight/fold_02/esf_attr_best.pt",
+      "last_ckpt": "plugin/ESF_net/ascweight/fold_02/esf_attr_last.pt",
+      "fold": 2,
+      "train_size": 3951,
+      "val_size": 988
+    },
+    {
+      "best_val": 5.186452478170395,
+      "best_ckpt": "plugin/ESF_net/ascweight/fold_03/esf_attr_best.pt",
+      "last_ckpt": "plugin/ESF_net/ascweight/fold_03/esf_attr_last.pt",
+      "fold": 3,
+      "train_size": 3951,
+      "val_size": 988
+    },
+    {
+      "best_val": 5.178736925125122,
+      "best_ckpt": "plugin/ESF_net/ascweight/fold_04/esf_attr_best.pt",
+      "last_ckpt": "plugin/ESF_net/ascweight/fold_04/esf_attr_last.pt",
+      "fold": 4,
+      "train_size": 3951,
+      "val_size": 988
+    },
+    {
+      "best_val": 5.099577993154526,
+      "best_ckpt": "plugin/ESF_net/ascweight/fold_05/esf_attr_best.pt",
+      "last_ckpt": "plugin/ESF_net/ascweight/fold_05/esf_attr_last.pt",
+      "fold": 5,
+      "train_size": 3952,
+      "val_size": 987
+    }
+  ]
+}

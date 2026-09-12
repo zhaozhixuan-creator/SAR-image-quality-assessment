@@ -1,0 +1,30 @@
+# python NVSynthesis/apis/main.py --mode train -opt configs/_base_/NVSynthesis/train.yml
+
+#### basic setup
+name: diffusion_ori
+use_tb_logger: false
+
+#### datasets
+datasets: 
+  base: mstar-default
+
+#### train
+gpu_ids: [0]
+scheme: supervised
+sub_scheme: original
+pretrain: null
+setting:
+  base: train
+
+#### network
+network:
+  base: xunet
+
+#### pipeline
+pipeline: diffusion
+sub_pipeline: original
+pipL:
+  logsnr_min: -20.0
+  logsnr_max:  20.0
+  total_timestep: 256
+  w: [0, 1, 2, 3, 4, 5, 6, 7]

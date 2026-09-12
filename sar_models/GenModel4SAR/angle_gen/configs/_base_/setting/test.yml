@@ -1,0 +1,6 @@
+#### testing settings
+setting:
+  manual_seed: 0
+  test_target_type: ZIL131
+  target_mse_top_ratio: 0.2
+  target_mse_weight_power: 1.0
