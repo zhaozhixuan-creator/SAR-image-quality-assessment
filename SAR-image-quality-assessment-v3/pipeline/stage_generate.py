@@ -2,7 +2,7 @@
 
 - stylegan4sar：两变体（基线/增强）按 (类, 角度) 条件批量生成 128×128。
 - angle_gen：两 checkpoint（geometry/baseline）NVS 生成 64×64 目标视角 + 参考/真值。
-- frequency_gen：X→Ka Pix2Pix 实跑推理（smoke 单样本，生成真实 Ka vs 生成 Ka）。
+- frequency_gen：X→Ka Pix2Pix 实跑推理（真实 wholeImg 测试集 99 对，生成真实 Ka vs 生成 Ka）。
 - gaussrecon4sar：本机无法重生成，导入预生成 renders(生成)/gt(真值) 成对结果。
 """
 from __future__ import annotations
@@ -112,13 +112,14 @@ def run_frequency_gen(cfg, args) -> None:
         "--outdir", str(out),
         "--gpu", str(cfg["evaluation"]["gpu"]),
     ]
+    if m.get("data_root"):
+        cmd += ["--dataroot", paths.resolve(m["data_root"], cfg)]
     print(f"[stage_b] frequency_gen: {m['note']}")
     subprocess.run(cmd, cwd=paths.resolve(m["cwd"], cfg), check=True)
-    # 回填数据受限说明（供报告「受限项」读取）
+    # 回填元数据（真实数据 → 不再标记 data_limited，报告按适用指标正常出表）
     man = io.read_json(out / "generation_manifest.json")
     man["note"] = m["note"]
-    man["data_limited"] = True
-    man["reason"] = "无真实 X/Ka 配对数据，仅合成 smoke 单样本（FR/SSIM 配对评估）"
+    man["data_limited"] = False
     io.write_json(out / "generation_manifest.json", man)
 
 

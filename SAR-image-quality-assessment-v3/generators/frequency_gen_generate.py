@@ -54,12 +54,16 @@ def main():
     ap.add_argument("--outdir", required=True)
     ap.add_argument("--gpu", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=1)
+    ap.add_argument("--dataroot", default=None,
+                    help="覆盖测试数据根目录；在其下 testdir 子目录扫描配对 tiff（默认用配置里的相对路径）")
     args = ap.parse_args()
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
     cfg = Config.fromfile(args.config)
+    if args.dataroot:
+        cfg.data.test.dataroot = args.dataroot
     set_random_seed(2021, deterministic=False)
 
     model = build_model(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)

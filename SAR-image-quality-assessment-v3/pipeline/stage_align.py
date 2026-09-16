@@ -116,11 +116,11 @@ def _align_frequency_gen(cfg):
     for s in man["samples"]:
         real_l.append(np.load(gen_dir / s["gt_file"]))
         fake_l.append(np.load(gen_dir / s["gen_file"]))
-    out = paths.ws_dir(cfg, "aligned", "frequency_gen", "smoke")
+    out = paths.ws_dir(cfg, "aligned", "frequency_gen", "wholeimg")
     out.mkdir(parents=True, exist_ok=True)
     np.save(out / "real.npy", np.stack(real_l).astype(np.float32))
     np.save(out / "fake.npy", np.stack(fake_l).astype(np.float32))
-    print(f"[stage_c] frequency_gen/smoke: 对齐 {len(real_l)} 对（无角度，仅 FR/SSIM）")
+    print(f"[stage_c] frequency_gen/wholeimg: 对齐 {len(real_l)} 对（无角度，仅 FR/SSIM）")
 
 
 def _align_gaussrecon(cfg):

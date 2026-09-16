@@ -50,10 +50,10 @@ python run_pipeline.py --stage report             # E 报告
 | 指标 | stylegan4SAR | angle_gen | frequency_gen | gaussrecon4sar |
 |---|---|---|---|---|
 | FID / ΔENL / BVE（分布级） | ✅ 两变体 | ✅ 两变体 | ❌（无真实分布） | ✅ 三变体 |
-| SSIM（结构，配对） | ✅ | ✅ | ✅（smoke 单对） | ✅ |
+| SSIM（结构，配对） | ✅ | ✅ | ✅（99 对） | ✅ |
 | AFS（目标区 ASC 结构） | ✅ | ✅ | ❌（域不匹配） | ✅ |
 | CMAE（角度条件） | ✅（条件角） | ✅（目标角） | ❌（无角度） | ✅（文件名方位角） |
-| 7 项 FR（全参考配对） | ✅ | ✅ | ✅（smoke 单对） | ✅ |
+| 7 项 FR（全参考配对） | ✅ | ✅ | ✅（99 对） | ✅ |
 
 ## 覆盖的生成模型（4 子目录）
 
@@ -61,7 +61,7 @@ python run_pipeline.py --stage report             # E 报告
 |---|---|---|---|
 | `stylegan4SAR` | 条件 StyleGAN2-ADA | 基线 / 增强(AASG+ESF+ENL) | 10 类已训 5000kimg，✅ 全量评估 |
 | `GenModel4SAR/angle_gen` | XUNet 扩散 NVS | geometry / baseline / adapted 姿态编码 | ✅ 全量评估（64×64） |
-| `GenModel4SAR/frequency_gen` | X→Ka Pix2Pix | — | ⚠️ 无真实 X/Ka 配对数据，smoke 单样本（SSIM+FR） |
+| `GenModel4SAR/frequency_gen` | X→Ka Pix2Pix | — | ✅ 真实 wholeImg 测试集 99 对（SSIM+FR） |
 | `GaussRecon4SAR` | 3DGS 电磁反演/重构 | image_SSIM / image_SSIM_sanshezhongxin / reconstruction_CD_sanshezhongxin | ✅ 预生成 renders/gt 评估（本机 Linux 无法重生成） |
 
 > 说明：

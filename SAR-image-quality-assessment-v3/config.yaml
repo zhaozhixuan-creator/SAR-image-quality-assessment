@@ -73,10 +73,12 @@ models:
     size: 64
     config: "{root}/sar_models/GenModel4SAR/frequency_gen/configs/pix2pix_SAR/pix2pix_vanilla_unet_bn_x2ka_b1x1_220k.py"
     checkpoint: "{root}/sar_models/GenModel4SAR/frequency_gen/work_dirs/x2ka_aircas_pretrained/ckpt/x2ka_aircas_pretrained/latest.pth"
+    # 真实 X→Ka 配对测试集：jk_frequency/data/wholeImg（99 对 whole-image 配对，替代 smoke 合成单样本）
+    data_root: "../sar_models/GenModel4SAR/jk_frequency/data/wholeImg"
     # 翻译任务（X→Ka 配对），无角度条件、非 MSTAR 幅度分布 → 仅适用配对 FR + SSIM
     metrics: [ssim, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]
     pairing: "翻译配对：生成 Ka vs 真值 Ka 逐像素（仅配对 FR + SSIM 适用）"
-    note: "X→Ka Pix2Pix（无真实配对数据，smoke 级：仅合成单样本）"
+    note: "X→Ka Pix2Pix（真实 wholeImg 测试集 99 对：X 波段 → Ka 波段翻译）"
 
   gaussrecon4sar:
     kind: gaussrecon

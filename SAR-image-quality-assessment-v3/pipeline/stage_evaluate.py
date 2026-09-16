@@ -77,7 +77,7 @@ def run(cfg, args):
                           _metrics_for(cfg, "angle_gen"))
 
     if not only or only == "frequency_gen":
-        _evaluate_one(gm, cfg, "frequency_gen", "smoke", 64, R_64, E_asc, device,
+        _evaluate_one(gm, cfg, "frequency_gen", "wholeimg", 64, R_64, E_asc, device,
                       cfg["models"]["frequency_gen"], _metrics_for(cfg, "frequency_gen"))
 
     if not only or only == "gaussrecon4sar":
