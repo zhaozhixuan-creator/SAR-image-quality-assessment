@@ -1,0 +1,25 @@
+name: openmmlab
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pip=23.3
+  - pytorch=1.10.2
+  - torchvision=0.11.3
+  - cudatoolkit=11.3
+  - numpy=1.21.6
+  - wheel
+  - pip:
+      - https://download.openmmlab.com/mmcv/dist/cu113/torch1.10.0/mmcv_full-1.6.2-cp38-cp38-manylinux1_x86_64.whl
+      - opencv-python-headless==4.5.5.64
+      - scikit-image==0.19.3
+      - pillow==9.5.0
+      - tifffile==2022.10.10
+      - imageio==2.22.4
+      - PyYAML==6.0.1
+      - addict==2.4.0
+      - yapf==0.40.1
+      - termcolor==2.4.0
+      - packaging==23.2
