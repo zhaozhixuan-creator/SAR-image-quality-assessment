@@ -73,6 +73,8 @@ def setup_training_loop_kwargs(
     aasg_uv_center_weight = None, # AASG center regularization for uv: <float>
     enl_bg_enabled = None, # Enable ENL_bg module: <bool>, default = False
     esf_enabled = None, # Enable ESF frozen branch in Discriminator: <bool>, default = False
+    azimuth_weight = None, # Azimuth consistency loss weight (frozen QA estimator R as teacher): <float>, default = 0
+    azimuth_estimator = None, # Path to R_128.pt azimuth estimator checkpoint: <path>
 ):
     args = dnnlib.EasyDict()
 
@@ -290,6 +292,18 @@ def setup_training_loop_kwargs(
             raise UserError(f'ESF checkpoint path in ESF_config does not exist: {esf_ckpt}')
         args.D_kwargs.esf_ckpt_path = esf_ckpt
         desc += '-esf'
+
+    if azimuth_weight is None:
+        azimuth_weight = 0.0
+    assert isinstance(azimuth_weight, float)
+    if azimuth_weight < 0:
+        raise UserError('--azimuth_weight must be non-negative')
+    if azimuth_weight > 0:
+        if azimuth_estimator is None or not os.path.isfile(azimuth_estimator):
+            raise UserError(f'--azimuth_weight > 0 requires a valid --azimuth_estimator path, got: {azimuth_estimator}')
+        desc += f'-az{azimuth_weight:g}'
+        args.loss_kwargs.azimuth_weight = azimuth_weight
+        args.loss_kwargs.azimuth_estimator = azimuth_estimator
 
     if batch is not None:
         assert isinstance(batch, int)
@@ -522,6 +536,8 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--aasg_uv_center_weight', help='AASG uv-center regularization weight [default: 0.005]', type=float)
 @click.option('--enl_bg_enabled', help='Enable ENL_bg background consistency loss [default: false]', type=bool, metavar='BOOL')
 @click.option('--esf_enabled', help='Enable ESF frozen branch injection into D [default: false]', type=bool, metavar='BOOL')
+@click.option('--azimuth_weight', help='Azimuth consistency loss weight (frozen QA estimator R as teacher) [default: 0]', type=float)
+@click.option('--azimuth_estimator', help='Path to R_128.pt azimuth estimator checkpoint', metavar='PT')
 
 def main(ctx, outdir, dry_run, **config_kwargs):
     """Train a GAN using the techniques described in the paper

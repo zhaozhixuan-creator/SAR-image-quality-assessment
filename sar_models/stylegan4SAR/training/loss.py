@@ -12,6 +12,7 @@ from torch_utils import training_stats
 from torch_utils import misc
 from torch_utils.ops import conv2d_gradfix
 from plugin.ENL_bg import ENLBGModule, DEFAULT_ENLBG_CONFIG, build_enlbg_config
+from plugin.azimuth_loss import load_azimuth_estimator
 
 #----------------------------------------------------------------------------
 
@@ -24,7 +25,8 @@ class Loss:
 class StyleGAN2Loss(Loss):
     def __init__(self, device, G_mapping, G_synthesis, D, augment_pipe=None, style_mixing_prob=0.9, r1_gamma=10, pl_batch_shrink=2, pl_decay=0.01, pl_weight=2,
                  aasg_energy_weight=0.02, aasg_energy_tau=0.005, aasg_energy_topk=4, aasg_energy_stop_kimg=1500.0,
-                 aasg_uv_center_weight=0.005, enl_bg_enabled=False):
+                 aasg_uv_center_weight=0.005, enl_bg_enabled=False,
+                 azimuth_weight=0.0, azimuth_estimator=None):
         super().__init__()
         self.device = device
         self.G_mapping = G_mapping
@@ -47,6 +49,12 @@ class StyleGAN2Loss(Loss):
         if self.enl_bg_enabled:
             cfg = build_enlbg_config(dict(DEFAULT_ENLBG_CONFIG.to_dict(), enabled=True))
             self.enl_bg_module = ENLBGModule(cfg=cfg)
+        self.azimuth_weight = float(azimuth_weight)
+        self.azimuth_estimator = None
+        if self.azimuth_weight > 0:
+            if not azimuth_estimator:
+                raise ValueError('azimuth_weight > 0 requires azimuth_estimator (path to R_128.pt)')
+            self.azimuth_estimator = load_azimuth_estimator(azimuth_estimator, device)
 
     def run_G(self, z, c, sync, return_aasg_viz=False, cur_nimg=0):
         with misc.ddp_sync(self.G_mapping, sync):
@@ -131,6 +139,18 @@ class StyleGAN2Loss(Loss):
                     training_stats.report('Loss/ENL/enl_gen_mean', torch.as_tensor(enl_bg_stats['enl_gen_mean'], device=self.device))
                     training_stats.report('Loss/ENL/enl_real_mean', torch.as_tensor(enl_bg_stats['enl_real_mean'], device=self.device))
                     training_stats.report('Loss/ENL/lambda_eff', torch.as_tensor(enl_bg_stats['lambda_eff'], device=self.device))
+                # Azimuth consistency: QA's frozen angle estimator R supervises the generator,
+                # forcing generated images' orientation to match the conditioning angle (targets CMAE).
+                if self.azimuth_estimator is not None:
+                    img_r = (gen_img[:, 0:1] + 1.0) * 0.5       # [-1,1] -> [0,1], take grayscale channel
+                    img_r = img_r.clamp(min=0.0)
+                    img_r = img_r / img_r.amax(dim=[2, 3], keepdim=True).clamp(min=1e-6)
+                    sc_pred = self.azimuth_estimator(img_r)     # [N,2] sin,cos (unnormalized)
+                    sc_pred = torch.nn.functional.normalize(sc_pred, dim=1, eps=1e-8)
+                    target = torch.nn.functional.normalize(gen_c[:, -2:], dim=1, eps=1e-8)
+                    loss_azimuth = (1.0 - (sc_pred * target).sum(dim=1)).mean()
+                    loss_Gmain = loss_Gmain + loss_azimuth * self.azimuth_weight
+                    training_stats.report('Loss/G/azimuth', loss_azimuth)
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 loss_Gmain.mean().mul(gain).backward()
