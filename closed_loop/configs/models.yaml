@@ -1,0 +1,33 @@
+# 模型能力注册（闭环路由 + 画像 + 反馈的元数据来源）
+# 具体 checkpoint / venv / cwd 等生成参数由 v3/config.yaml 提供，本文件只登记「能力边界」。
+models:
+  - model_id: stylegan4sar
+    model_name: "条件 StyleGAN2-ADA 批量生成"
+    task_type: batch_generation            # 无参考、类+方位角条件批量生成
+    requires_reference: false
+    default_variant: stylegan2_ada_5class
+    variants: [stylegan2_ada_5class, stylegan2_ada_5class_azimuth]
+    supported_classes: [2S1, BRDM2, D7, T62, ZIL131]     # 5 类硬边界
+    size: 128
+    # 适用指标（其余置 None；完整 13 项见 v3 config）
+    applicable_metrics: [fid, ssim, afs, delta_enl, bve, cmae_deg, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]
+
+  - model_id: angle_gen
+    model_name: "XUNet 扩散新视角合成（NVS）"
+    task_type: novel_view_synthesis        # 参考图驱动换视角（保实例）
+    requires_reference: true
+    default_variant: adapted               # 仓库默认 pretrain 源（注意：实测偏弱，见画像）
+    variants: [geometry, baseline, adapted]
+    supported_classes: [2S1, BMP2, BRDM2, BTR60, BTR70, D7, T62, T72, ZIL131, ZSU234]
+    size: 64
+    applicable_metrics: [fid, ssim, afs, delta_enl, bve, cmae_deg, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]
+
+  - model_id: frequency_gen
+    model_name: "X→Ka Pix2Pix 跨波段翻译"
+    task_type: cross_band_translation      # 配对逐像素翻译（仅 X→Ka 域对）
+    requires_reference: false
+    default_variant: wholeimg
+    variants: [wholeimg]
+    supported_classes: []
+    size: 64
+    applicable_metrics: [ssim, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]

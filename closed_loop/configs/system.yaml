@@ -1,0 +1,21 @@
+# 闭环反馈系统 —— 全局配置
+# 本文件声明闭环自身的运行参数 + 指向 v3 质检引擎（3 模型 + 13 指标）的位置。
+
+system:
+  default_dataset: MSTAR
+  default_task_type: batch_generation
+  max_iteration: 3          # 闭环最多迭代轮数（生成→评估→反馈→重跑）
+  default_threshold_mode: adaptive
+
+# v3 质检引擎（复用其 3 模型 + 13 指标 + 辅助估计器，不复制实现）
+v3:
+  root: ../SAR-image-quality-assessment-v3
+  config: ../SAR-image-quality-assessment-v3/config.yaml
+
+paths:
+  generated_data_dir: results/generated
+  report_dir: results/reports
+  task_record_dir: results/tasks
+  package_dir: results/packages
+  log_dir: results/logs
+  experiment_dir: results/experiments

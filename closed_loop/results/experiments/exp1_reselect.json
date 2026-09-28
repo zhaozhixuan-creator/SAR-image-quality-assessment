@@ -1,0 +1,93 @@
+{
+  "experiment": "exp1_reselect",
+  "mechanism": "模型/变体重选",
+  "question": "质检能否区分变体并指导选型，反馈后指标是否改善？",
+  "available_variants": {
+    "geometry": {
+      "delta_enl": 0.44944610311273087,
+      "bve": 0.009205577001781673,
+      "ssim": 0.03197668320885925,
+      "afs": 0.7291148900985718,
+      "psnr": 12.046469008039018
+    },
+    "baseline": {
+      "delta_enl": 0.3826238992923794,
+      "bve": 0.0020241540582458368,
+      "ssim": 0.13237947909192077,
+      "afs": 0.7746527194976807,
+      "psnr": 15.982275987536035
+    },
+    "adapted": {
+      "delta_enl": 2.3742858195420182,
+      "bve": 0.11689586054497912,
+      "ssim": 0.001037810580334743,
+      "afs": 0.6799209713935852,
+      "psnr": 2.9675397279028424
+    }
+  },
+  "case_background_consistency": {
+    "action": "reselect",
+    "applied": true,
+    "model_id": "angle_gen",
+    "from_variant": "adapted",
+    "to_variant": "baseline",
+    "reason": "需求关注 ['background_consistency']，当前 adapted 的 delta_enl=2.374 弱于 baseline (0.3826)，改派该变体",
+    "expected": {
+      "metric": "delta_enl",
+      "from_value": 2.3742858195420182,
+      "to_value": 0.3826238992923794,
+      "relative_gap": 0.8388
+    },
+    "recommendations": [
+      {
+        "metric": "delta_enl",
+        "from_variant": "adapted",
+        "from_value": 2.3742858195420182,
+        "to_variant": "baseline",
+        "to_value": 0.3826238992923794,
+        "relative_gap": 0.8388
+      },
+      {
+        "metric": "bve",
+        "from_variant": "adapted",
+        "from_value": 0.11689586054497912,
+        "to_variant": "baseline",
+        "to_value": 0.0020241540582458368,
+        "relative_gap": 0.9827
+      }
+    ]
+  },
+  "case_structure_fidelity": {
+    "action": "reselect",
+    "applied": true,
+    "model_id": "angle_gen",
+    "from_variant": "adapted",
+    "to_variant": "baseline",
+    "reason": "需求关注 ['structure_fidelity']，当前 adapted 的 ssim=0.001038 弱于 baseline (0.1324)，改派该变体",
+    "expected": {
+      "metric": "ssim",
+      "from_value": 0.001037810580334743,
+      "to_value": 0.13237947909192077,
+      "relative_gap": 0.9922
+    },
+    "recommendations": [
+      {
+        "metric": "ssim",
+        "from_variant": "adapted",
+        "from_value": 0.001037810580334743,
+        "to_variant": "baseline",
+        "to_value": 0.13237947909192077,
+        "relative_gap": 0.9922
+      },
+      {
+        "metric": "afs",
+        "from_variant": "adapted",
+        "from_value": 0.6799209713935852,
+        "to_variant": "baseline",
+        "to_value": 0.7746527194976807,
+        "relative_gap": 0.1223
+      }
+    ]
+  },
+  "conclusion": "reselect 有效"
+}

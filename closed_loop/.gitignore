@@ -1,0 +1,8 @@
+# 训练/生成的大二进制产物不入库（可由 checkpoint+脚本复现；manifest/json 已留元数据）
+results/retrain/**/*.pkl
+results/retrain/**/*.png
+results/generated/**/*.npy
+results/generated/**/*.png
+
+__pycache__/
+*.pyc

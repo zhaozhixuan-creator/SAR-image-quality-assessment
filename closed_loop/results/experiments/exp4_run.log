@@ -1,0 +1,378 @@
+[exp4] 方位角定向续训 --resume=/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/perweights/3_3_weights_baseline/network-snapshot-001300.pkl --kimg=200 --azimuth_weight=1.0 …
+
+Training options:
+{
+  "num_gpus": 1,
+  "image_snapshot_ticks": 25,
+  "network_snapshot_ticks": 25,
+  "metrics": [],
+  "random_seed": 0,
+  "training_set_kwargs": {
+    "class_name": "training.dataset.ImageFolderDataset",
+    "path": "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/datasets/mstar15_5class_stride5_maxdev-128.zip",
+    "use_labels": true,
+    "max_size": 360,
+    "xflip": false,
+    "resolution": 128
+  },
+  "data_loader_kwargs": {
+    "pin_memory": true,
+    "num_workers": 3,
+    "prefetch_factor": 2
+  },
+  "G_kwargs": {
+    "class_name": "training.networks.Generator",
+    "z_dim": 512,
+    "w_dim": 512,
+    "mapping_kwargs": {
+      "num_layers": 2
+    },
+    "synthesis_kwargs": {
+      "channel_base": 16384,
+      "channel_max": 512,
+      "num_fp16_res": 4,
+      "conv_clamp": 256,
+      "aasg_enabled": false
+    }
+  },
+  "D_kwargs": {
+    "class_name": "training.networks.Discriminator",
+    "block_kwargs": {},
+    "mapping_kwargs": {},
+    "epilogue_kwargs": {
+      "mbstd_group_size": 4
+    },
+    "channel_base": 16384,
+    "channel_max": 512,
+    "num_fp16_res": 4,
+    "conv_clamp": 256,
+    "esf_enabled": false,
+    "esf_ckpt_path": null,
+    "esf_fusion_weight": 0.3
+  },
+  "G_opt_kwargs": {
+    "class_name": "torch.optim.Adam",
+    "lr": 0.0025,
+    "betas": [
+      0,
+      0.99
+    ],
+    "eps": 1e-08
+  },
+  "D_opt_kwargs": {
+    "class_name": "torch.optim.Adam",
+    "lr": 0.0025,
+    "betas": [
+      0,
+      0.99
+    ],
+    "eps": 1e-08
+  },
+  "loss_kwargs": {
+    "class_name": "training.loss.StyleGAN2Loss",
+    "r1_gamma": 0.1024,
+    "aasg_energy_weight": 0.02,
+    "aasg_energy_tau": 0.005,
+    "aasg_energy_topk": 4,
+    "aasg_energy_stop_kimg": 1500.0,
+    "aasg_uv_center_weight": 0.005,
+    "enl_bg_enabled": false,
+    "azimuth_weight": 1.0,
+    "azimuth_estimator": "/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/../SAR-image-quality-assessment-v3/workspace/checkpoints/R_128.pt"
+  },
+  "total_kimg": 200,
+  "batch_size": 32,
+  "batch_gpu": 32,
+  "ema_kimg": 10.0,
+  "ema_rampup": null,
+  "ada_target": 0.6,
+  "augment_kwargs": {
+    "class_name": "training.augment.AugmentPipe",
+    "xflip": 1,
+    "rotate90": 1,
+    "xint": 1,
+    "scale": 1,
+    "rotate": 1,
+    "aniso": 1,
+    "xfrac": 1,
+    "brightness": 1,
+    "contrast": 1,
+    "lumaflip": 1,
+    "hue": 1,
+    "saturation": 1
+  },
+  "resume_pkl": "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/perweights/3_3_weights_baseline/network-snapshot-001300.pkl",
+  "ada_kimg": 100,
+  "run_dir": "/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom"
+}
+
+Output directory:   /home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom
+Training data:      /home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/datasets/mstar15_5class_stride5_maxdev-128.zip
+Training duration:  200 kimg
+Number of GPUs:     1
+Number of images:   360
+Image resolution:   128
+Conditional model:  True
+Dataset x-flips:    False
+
+Creating output directory...
+Launching processes...
+Loading training set...
+
+Num images:  360
+Image shape: [3, 128, 128]
+Label shape: [7]
+
+Constructing networks...
+Resuming from "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/perweights/3_3_weights_baseline/network-snapshot-001300.pkl"
+Setting up PyTorch plugin "bias_act_plugin"... Done.
+Setting up PyTorch plugin "upfirdn2d_plugin"... Done.
+
+Generator             Parameters  Buffers  Output shape         Datatype
+---                   ---         ---      ---                  ---     
+mapping.embed         4096        -        [32, 512]            float32 
+mapping.fc0           524800      -        [32, 512]            float32 
+mapping.fc1           262656      -        [32, 512]            float32 
+mapping               -           512      [32, 12, 512]        float32 
+synthesis.b4.conv1    2622465     32       [32, 512, 4, 4]      float32 
+synthesis.b4.torgb    264195      -        [32, 3, 4, 4]        float32 
+synthesis.b4:0        8192        16       [32, 512, 4, 4]      float32 
+synthesis.b4:1        -           -        [32, 512, 4, 4]      float32 
+synthesis.b8.conv0    2622465     80       [32, 512, 8, 8]      float32 
+synthesis.b8.conv1    2622465     80       [32, 512, 8, 8]      float32 
+synthesis.b8.torgb    264195      -        [32, 3, 8, 8]        float32 
+synthesis.b8:0        -           16       [32, 512, 8, 8]      float32 
+synthesis.b8:1        -           -        [32, 512, 8, 8]      float32 
+synthesis.b16.conv0   2622465     272      [32, 512, 16, 16]    float16 
+synthesis.b16.conv1   2622465     272      [32, 512, 16, 16]    float16 
+synthesis.b16.torgb   264195      -        [32, 3, 16, 16]      float16 
+synthesis.b16:0       -           16       [32, 512, 16, 16]    float16 
+synthesis.b16:1       -           -        [32, 512, 16, 16]    float32 
+synthesis.b32.conv0   2622465     1040     [32, 512, 32, 32]    float16 
+synthesis.b32.conv1   2622465     1040     [32, 512, 32, 32]    float16 
+synthesis.b32.torgb   264195      -        [32, 3, 32, 32]      float16 
+synthesis.b32:0       -           16       [32, 512, 32, 32]    float16 
+synthesis.b32:1       -           -        [32, 512, 32, 32]    float32 
+synthesis.b64.conv0   1442561     4112     [32, 256, 64, 64]    float16 
+synthesis.b64.conv1   721409      4112     [32, 256, 64, 64]    float16 
+synthesis.b64.torgb   132099      -        [32, 3, 64, 64]      float16 
+synthesis.b64:0       -           16       [32, 256, 64, 64]    float16 
+synthesis.b64:1       -           -        [32, 256, 64, 64]    float32 
+synthesis.b128.conv0  426369      16400    [32, 128, 128, 128]  float16 
+synthesis.b128.conv1  213249      16400    [32, 128, 128, 128]  float16 
+synthesis.b128.torgb  66051       -        [32, 3, 128, 128]    float16 
+synthesis.b128:0      -           16       [32, 128, 128, 128]  float16 
+synthesis.b128:1      -           -        [32, 128, 128, 128]  float32 
+---                   ---         ---      ---                  ---     
+Total                 23215517    44448    -                    -       
+
+
+Discriminator  Parameters  Buffers  Output shape         Datatype
+---            ---         ---      ---                  ---     
+b128.fromrgb   512         16       [32, 128, 128, 128]  float16 
+b128.skip      32768       16       [32, 256, 64, 64]    float16 
+b128.conv0     147584      16       [32, 128, 128, 128]  float16 
+b128.conv1     295168      16       [32, 256, 64, 64]    float16 
+b128           -           16       [32, 256, 64, 64]    float16 
+b64.skip       131072      16       [32, 512, 32, 32]    float16 
+b64.conv0      590080      16       [32, 256, 64, 64]    float16 
+b64.conv1      1180160     16       [32, 512, 32, 32]    float16 
+b64            -           16       [32, 512, 32, 32]    float16 
+b32.skip       262144      16       [32, 512, 16, 16]    float16 
+b32.conv0      2359808     16       [32, 512, 32, 32]    float16 
+b32.conv1      2359808     16       [32, 512, 16, 16]    float16 
+b32            -           16       [32, 512, 16, 16]    float16 
+b16.skip       262144      16       [32, 512, 8, 8]      float16 
+b16.conv0      2359808     16       [32, 512, 16, 16]    float16 
+b16.conv1      2359808     16       [32, 512, 8, 8]      float16 
+b16            -           16       [32, 512, 8, 8]      float16 
+b8.skip        262144      16       [32, 512, 4, 4]      float32 
+b8.conv0       2359808     16       [32, 512, 8, 8]      float32 
+b8.conv1       2359808     16       [32, 512, 4, 4]      float32 
+b8             -           16       [32, 512, 4, 4]      float32 
+mapping.embed  4096        -        [32, 512]            float32 
+mapping.fc0    262656      -        [32, 512]            float32 
+mapping.fc1    262656      -        [32, 512]            float32 
+mapping.fc2    262656      -        [32, 512]            float32 
+mapping.fc3    262656      -        [32, 512]            float32 
+mapping.fc4    262656      -        [32, 512]            float32 
+mapping.fc5    262656      -        [32, 512]            float32 
+mapping.fc6    262656      -        [32, 512]            float32 
+mapping.fc7    262656      -        [32, 512]            float32 
+b4.mbstd       -           -        [32, 513, 4, 4]      float32 
+b4.conv        2364416     16       [32, 512, 4, 4]      float32 
+b4.fc          4194816     -        [32, 512]            float32 
+b4.out         262656      -        [32, 512]            float32 
+b4             -           -        [32, 1]              float32 
+---            ---         ---      ---                  ---     
+Total          26249856    352      -                    -       
+
+Setting up augmentation...
+Distributing across 1 GPUs...
+Setting up training phases...
+Exporting sample images...
+Initializing logs...
+Skipping tfevents export: No module named 'tensorboard'
+Training for 200 kimg...
+
+tick 0     kimg 0.0      time 20s          sec/tick 3.9     sec/kimg 121.41  maintenance 15.8   cpumem 4.88   gpumem 35.06  augment 0.000
+tick 1     kimg 4.0      time 1m 40s       sec/tick 71.6    sec/kimg 17.89   maintenance 8.6    cpumem 4.94   gpumem 7.13   augment 0.037
+tick 2     kimg 8.0      time 2m 52s       sec/tick 72.2    sec/kimg 18.05   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.077
+tick 3     kimg 12.0     time 4m 05s       sec/tick 72.4    sec/kimg 18.10   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.118
+tick 4     kimg 16.0     time 5m 17s       sec/tick 72.6    sec/kimg 18.15   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.155
+tick 5     kimg 20.0     time 6m 30s       sec/tick 72.4    sec/kimg 18.10   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.195
+tick 6     kimg 24.0     time 7m 42s       sec/tick 72.2    sec/kimg 18.06   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.234
+tick 7     kimg 28.0     time 8m 55s       sec/tick 72.6    sec/kimg 18.14   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.257
+tick 8     kimg 32.0     time 10m 07s      sec/tick 72.7    sec/kimg 18.18   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.284
+tick 9     kimg 36.0     time 11m 20s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.301
+tick 10    kimg 40.0     time 12m 33s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.303
+tick 11    kimg 44.0     time 13m 45s      sec/tick 72.4    sec/kimg 18.09   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.332
+tick 12    kimg 48.0     time 14m 58s      sec/tick 72.7    sec/kimg 18.18   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.349
+tick 13    kimg 52.0     time 16m 10s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.339
+tick 14    kimg 56.0     time 17m 23s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.340
+tick 15    kimg 60.0     time 18m 36s      sec/tick 72.6    sec/kimg 18.15   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.361
+tick 16    kimg 64.0     time 19m 48s      sec/tick 72.7    sec/kimg 18.18   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.375
+tick 17    kimg 68.0     time 21m 01s      sec/tick 72.3    sec/kimg 18.08   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.372
+tick 18    kimg 72.0     time 22m 13s      sec/tick 72.6    sec/kimg 18.14   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.384
+tick 19    kimg 76.0     time 23m 26s      sec/tick 72.6    sec/kimg 18.15   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.384
+tick 20    kimg 80.0     time 24m 39s      sec/tick 72.8    sec/kimg 18.19   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.365
+tick 21    kimg 84.0     time 25m 51s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.372
+tick 22    kimg 88.0     time 27m 04s      sec/tick 72.3    sec/kimg 18.07   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.379
+tick 23    kimg 92.0     time 28m 16s      sec/tick 72.6    sec/kimg 18.14   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.369
+tick 24    kimg 96.0     time 29m 29s      sec/tick 72.7    sec/kimg 18.18   maintenance 0.0    cpumem 4.94   gpumem 7.13   augment 0.366
+tick 25    kimg 100.0    time 30m 42s      sec/tick 72.5    sec/kimg 18.11   maintenance 0.1    cpumem 4.94   gpumem 7.13   augment 0.385
+tick 26    kimg 104.0    time 32m 02s      sec/tick 72.4    sec/kimg 18.11   maintenance 7.6    cpumem 4.99   gpumem 7.13   augment 0.376
+tick 27    kimg 108.0    time 33m 14s      sec/tick 72.4    sec/kimg 18.09   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.340
+tick 28    kimg 112.0    time 34m 27s      sec/tick 72.7    sec/kimg 18.17   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.357
+tick 29    kimg 116.0    time 35m 39s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.343
+tick 30    kimg 120.0    time 36m 52s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.370
+tick 31    kimg 124.0    time 38m 05s      sec/tick 72.6    sec/kimg 18.15   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.390
+tick 32    kimg 128.0    time 39m 17s      sec/tick 72.7    sec/kimg 18.19   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.398
+tick 33    kimg 132.0    time 40m 30s      sec/tick 72.3    sec/kimg 18.08   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.412
+tick 34    kimg 136.0    time 41m 42s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.431
+tick 35    kimg 140.0    time 42m 55s      sec/tick 72.6    sec/kimg 18.15   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.445
+tick 36    kimg 144.0    time 44m 08s      sec/tick 72.7    sec/kimg 18.18   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.436
+tick 37    kimg 148.0    time 45m 20s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.420
+tick 38    kimg 152.0    time 46m 33s      sec/tick 72.3    sec/kimg 18.08   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.438
+tick 39    kimg 156.0    time 47m 46s      sec/tick 72.7    sec/kimg 18.17   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.438
+tick 40    kimg 160.0    time 48m 58s      sec/tick 72.8    sec/kimg 18.20   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.429
+tick 41    kimg 164.0    time 50m 11s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.428
+tick 42    kimg 168.0    time 51m 24s      sec/tick 72.5    sec/kimg 18.14   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.422
+tick 43    kimg 172.0    time 52m 36s      sec/tick 72.4    sec/kimg 18.10   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.440
+tick 44    kimg 176.0    time 53m 49s      sec/tick 72.8    sec/kimg 18.19   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.403
+tick 45    kimg 180.0    time 55m 01s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.383
+tick 46    kimg 184.0    time 56m 14s      sec/tick 72.5    sec/kimg 18.13   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.371
+tick 47    kimg 188.0    time 57m 27s      sec/tick 72.6    sec/kimg 18.15   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.381
+tick 48    kimg 192.0    time 58m 40s      sec/tick 72.8    sec/kimg 18.20   maintenance 0.0    cpumem 4.99   gpumem 7.13   augment 0.362
+tick 49    kimg 196.0    time 59m 52s      sec/tick 72.3    sec/kimg 18.09   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.376
+tick 50    kimg 200.0    time 1h 01m 04s   sec/tick 72.1    sec/kimg 18.16   maintenance 0.1    cpumem 4.99   gpumem 7.13   augment 0.378
+
+Exiting...
+[exp4] 用新 snapshot 生成：/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom/network-snapshot-000200.pkl …
+[stylegan] loading /home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom/network-snapshot-000200.pkl
+Setting up PyTorch plugin "bias_act_plugin"... Failed!
+Setting up PyTorch plugin "upfirdn2d_plugin"... /home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/ops/bias_act.py:50: UserWarning: Failed to build CUDA kernels for bias_act. Falling back to slow reference implementation. Details:
+
+Traceback (most recent call last):
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/ops/bias_act.py", line 48, in _init
+    _plugin = custom_ops.get_plugin('bias_act_plugin', sources=sources, extra_cuda_cflags=['--use_fast_math'])
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/custom_ops.py", line 110, in get_plugin
+    torch.utils.cpp_extension.load(name=module_name, verbose=verbose_build, sources=sources, **build_kwargs)
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 986, in load
+    return _jit_compile(
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1193, in _jit_compile
+    _write_ninja_file_and_build_library(
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1268, in _write_ninja_file_and_build_library
+    verify_ninja_availability()
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1323, in verify_ninja_availability
+    raise RuntimeError("Ninja is required to load C++ extensions")
+RuntimeError: Ninja is required to load C++ extensions
+
+  warnings.warn('Failed to build CUDA kernels for bias_act. Falling back to slow reference implementation. Details:\n\n' + traceback.format_exc())
+/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/ops/upfirdn2d.py:38: UserWarning: Failed to build CUDA kernels for upfirdn2d. Falling back to slow reference implementation. Details:
+
+Traceback (most recent call last):
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/ops/upfirdn2d.py", line 36, in _init
+    _plugin = custom_ops.get_plugin('upfirdn2d_plugin', sources=sources, extra_cuda_cflags=['--use_fast_math'])
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/torch_utils/custom_ops.py", line 110, in get_plugin
+    torch.utils.cpp_extension.load(name=module_name, verbose=verbose_build, sources=sources, **build_kwargs)
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 986, in load
+    return _jit_compile(
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1193, in _jit_compile
+    _write_ninja_file_and_build_library(
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1268, in _write_ninja_file_and_build_library
+    verify_ninja_availability()
+  File "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/.venv/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1323, in verify_ninja_availability
+    raise RuntimeError("Ninja is required to load C++ extensions")
+RuntimeError: Ninja is required to load C++ extensions
+
+  warnings.warn('Failed to build CUDA kernels for upfirdn2d. Falling back to slow reference implementation. Details:\n\n' + traceback.format_exc())
+Failed!
+[stylegan] class 0: generated 100 images
+[stylegan] class 1: generated 100 images
+[stylegan] class 2: generated 100 images
+[stylegan] class 3: generated 100 images
+[stylegan] class 4: generated 100 images
+[stylegan] done: 500 images -> /home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/generated/stylegan_azimuth
+[exp4] 评估 13 项指标 …
+/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/scripts/run_feedback_experiments.py:285: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  R = torch.load(ckpt / "R_128.pt", map_location="cpu")
+/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/scripts/run_feedback_experiments.py:286: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  E = torch.load(ckpt / "E_asc.pt", map_location="cpu")
+{
+  "experiment": "exp4_azimuth_retrain",
+  "mechanism": "方位角定向重训（质检估计器 R 作为冻结教师，方位角一致性损失）",
+  "question": "质检发现的弱点（CMAE≈91°，方位角控制≈随机）经「用 R 定向微调」后是否改善？",
+  "resume_checkpoint": "/home/zhaozhixuan/SAR-Generation/sar_models/stylegan4SAR/perweights/3_3_weights_baseline/network-snapshot-001300.pkl",
+  "new_checkpoint": "/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom/network-snapshot-000200.pkl",
+  "kimg": 200,
+  "azimuth_weight": 1.0,
+  "azimuth_estimator": "/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/../SAR-image-quality-assessment-v3/workspace/checkpoints/R_128.pt",
+  "n_generated": 500,
+  "baseline_metrics": {
+    "fid": 201.7798172738676,
+    "ssim": 0.03659771340992391,
+    "afs": 0.64641934633255,
+    "delta_enl": 0.4087931302399287,
+    "bve": 0.011420381772280106,
+    "cmae_deg": 90.85046467964794,
+    "mse": 0.07036913131352421,
+    "rmse": 0.26527180648068166,
+    "psnr": 11.526178101786805,
+    "ncc": 0.1817039207941089,
+    "uqi": 0.018632751523942507,
+    "ms_ssim": 0.041627522766124456,
+    "fsim": 0.3796339167058468
+  },
+  "retrained_metrics": {
+    "fid": 203.66285046266583,
+    "ssim": 0.03534498169413676,
+    "afs": 0.64886075258255,
+    "delta_enl": 0.31804259429470955,
+    "bve": 0.011854782886085614,
+    "cmae_deg": 44.73972370679981,
+    "mse": 0.06820087019863186,
+    "rmse": 0.2611529632200865,
+    "psnr": 11.662100839937713,
+    "ncc": 0.18811129760478168,
+    "uqi": 0.019535368478209685,
+    "ms_ssim": 0.040010941257933155,
+    "fsim": 0.3835958422124386
+  },
+  "delta": {
+    "fid": 1.8830331887982368,
+    "ssim": -0.0012527317157871518,
+    "afs": 0.00244140625,
+    "delta_enl": -0.09075053594521915,
+    "bve": 0.0004344011138055076,
+    "cmae_deg": -46.110740972848134,
+    "mse": -0.0021682611148923503,
+    "rmse": -0.00411884326059514,
+    "psnr": 0.13592273815090827,
+    "ncc": 0.006407376810672771,
+    "uqi": 0.0009026169542671776,
+    "ms_ssim": -0.0016165815081913004,
+    "fsim": 0.003961925506591801
+  },
+  "conclusion": "见 delta 列"
+}

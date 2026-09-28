@@ -1,0 +1,18 @@
+# 数据集注册（供需求解析按类名/别名识别目标类）
+datasets:
+  - dataset_id: mstar_local
+    dataset_name: MSTAR
+    dataset_aliases: [MSTAR SOC, MSTAR Public Release]
+    task_type: classification
+    classes: [2S1, BMP2, BRDM2, BTR60, BTR70, D7, T62, T72, ZIL131, ZSU234]
+    class_aliases:
+      BRDM_2: BRDM2
+      BTR-60: BTR60
+      BTR-70: BTR70
+      T-62: T62
+      T-72: T72
+      ZIL-131: ZIL131
+      ZSU_23_4: ZSU234
+      ZSU-23-4: ZSU234
+    default_output_resolution: [128, 128]
+    description: "MSTAR 10 类 SOC 检测强度图"

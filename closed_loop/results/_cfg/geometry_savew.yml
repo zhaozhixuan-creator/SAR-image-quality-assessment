@@ -1,0 +1,26 @@
+name: diffusion_ori_v3
+use_tb_logger: false
+
+datasets:
+  base: mstar-soc10
+
+gpu_ids: [2]
+scheme: supervised
+sub_scheme: original
+pretrain: pretrained
+setting:
+  base: test
+
+network:
+  base: xunet
+
+pipeline: diffusion
+sub_pipeline: original
+pipL:
+  logsnr_min: -20.0
+  logsnr_max: 20.0
+  total_timestep: 256
+  w: [0, 1, 2, 3, 4, 5, 6, 7]
+
+path:
+  pretrain_model_pth: /home/zhaozhixuan/SAR-Generation/sar_models/GenModel4SAR/angle_gen/experiments/diffusion_ori/pretrained/models/SAR_geometry.pt

@@ -1,0 +1,190 @@
+{
+  "request": {
+    "task_id": "sar_20260922T163451Z_3a0fdfb4",
+    "raw_request": "参考图换视角，要求背景统计一致",
+    "task_type": "novel_view_synthesis",
+    "dataset": "MSTAR",
+    "target_classes": [
+      "2S1"
+    ],
+    "generation_count": 100,
+    "image_size": [
+      128,
+      128
+    ],
+    "azimuth_requirement": "not_specified",
+    "reference": "reference",
+    "quality_requirements": {
+      "background_consistency": "high",
+      "structure_fidelity": "medium",
+      "azimuth_precision": "medium"
+    },
+    "threshold_mode": "adaptive",
+    "max_iteration": 3,
+    "seed": 42
+  },
+  "route": {
+    "model_id": "angle_gen",
+    "variant": "adapted",
+    "task_type": "novel_view_synthesis",
+    "requires_reference": true,
+    "supported_classes": [
+      "2S1",
+      "BMP2",
+      "BRDM2",
+      "BTR60",
+      "BTR70",
+      "D7",
+      "T62",
+      "T72",
+      "ZIL131",
+      "ZSU234"
+    ],
+    "size": 64,
+    "applicable_metrics": [
+      "fid",
+      "ssim",
+      "afs",
+      "delta_enl",
+      "bve",
+      "cmae_deg",
+      "mse",
+      "rmse",
+      "psnr",
+      "ncc",
+      "uqi",
+      "ms_ssim",
+      "fsim"
+    ],
+    "blocked": false,
+    "unsupported_classes": [],
+    "reason": "参考图驱动换视角 → angle_gen（10 类、保实例）"
+  },
+  "plan": {
+    "task_id": "sar_20260922T163451Z_3a0fdfb4",
+    "steps": [
+      {
+        "name": "parse_requirement",
+        "status": "ready"
+      },
+      {
+        "name": "route_model",
+        "status": "ready",
+        "model_id": "angle_gen",
+        "variant": "adapted"
+      },
+      {
+        "name": "evaluate_quality",
+        "status": "ready"
+      },
+      {
+        "name": "detect_weakness",
+        "status": "ready"
+      },
+      {
+        "name": "apply_feedback",
+        "status": "ready"
+      },
+      {
+        "name": "verify_improvement",
+        "status": "ready"
+      },
+      {
+        "name": "output_portrait",
+        "status": "ready"
+      }
+    ]
+  },
+  "selected_model": "angle_gen",
+  "selected_variant": "baseline",
+  "metrics": {
+    "fid": 138.50744974609972,
+    "ssim": 0.13237947909192077,
+    "afs": 0.7746527194976807,
+    "delta_enl": 0.3826238992923794,
+    "bve": 0.0020241540582458368,
+    "cmae_deg": 101.84591191700787,
+    "mse": 0.02522158649744505,
+    "rmse": 0.15881305518579086,
+    "psnr": 15.982275987536035,
+    "ncc": 0.2228943370065743,
+    "uqi": 0.05247308496507907,
+    "ms_ssim": 0.13619609168730676,
+    "fsim": 0.5619375067949295
+  },
+  "characterization": {
+    "strengths": [],
+    "weaknesses": [
+      "结构保真度低（SSIM）",
+      "目标区散射结构偏差（AFS）",
+      "背景噪声统计偏差（ΔENL）",
+      "背景方差误差偏大（BVE）",
+      "方位角控制弱（CMAE）",
+      "与真实图相关性低（NCC）"
+    ],
+    "weak_metrics": [
+      "afs",
+      "bve",
+      "cmae_deg",
+      "delta_enl",
+      "ncc",
+      "ssim"
+    ]
+  },
+  "verdict": "weak(delta_enl)",
+  "feedback": {
+    "action": "reselect",
+    "reselect": {
+      "action": "reselect",
+      "applied": true,
+      "model_id": "angle_gen",
+      "from_variant": "adapted",
+      "to_variant": "baseline",
+      "reason": "需求关注 ['background_consistency']，当前 adapted 的 delta_enl=2.374 弱于 baseline (0.3826)，改派该变体",
+      "expected": {
+        "metric": "delta_enl",
+        "from_value": 2.3742858195420182,
+        "to_value": 0.3826238992923794,
+        "relative_gap": 0.8388
+      },
+      "recommendations": [
+        {
+          "metric": "delta_enl",
+          "from_variant": "adapted",
+          "from_value": 2.3742858195420182,
+          "to_variant": "baseline",
+          "to_value": 0.3826238992923794,
+          "relative_gap": 0.8388
+        },
+        {
+          "metric": "bve",
+          "from_variant": "adapted",
+          "from_value": 0.11689586054497912,
+          "to_variant": "baseline",
+          "to_value": 0.0020241540582458368,
+          "relative_gap": 0.9827
+        }
+      ]
+    },
+    "retrain": null,
+    "main_issues": [
+      "结构保真度低（SSIM）",
+      "目标区散射结构偏差（AFS）",
+      "背景噪声统计偏差（ΔENL）",
+      "背景方差误差偏大（BVE）",
+      "方位角控制弱（CMAE）",
+      "与真实图相关性低（NCC）"
+    ],
+    "recommended_actions": [
+      "重选模型变体：adapted → baseline（需求关注 ['background_consistency']，当前 adapted 的 delta_enl=2.374 弱于 baseline (0.3826)，改派该变体）"
+    ]
+  },
+  "improvement": {
+    "metric": "delta_enl",
+    "from_variant": "adapted",
+    "to_variant": "baseline",
+    "from_value": 2.3742858195420182,
+    "to_value": 0.3826238992923794,
+    "relative_gap": 0.8388
+  }
+}
