@@ -52,6 +52,8 @@ def main():
     ap.add_argument("--per-class", type=int, default=20)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--test-target-type", default="all")
+    ap.add_argument("--save-all-w", action="store_true",
+                    help="额外落盘全部去噪中间步 {fid}_w{k}.npy（k=0..len(w)-1），用于「扩散步数→质量」调参实验")
     args = ap.parse_args()
 
     outdir = Path(args.outdir)
@@ -92,15 +94,24 @@ def main():
             min_w_idx = int(torch.argmin(pipL.w).item())
             generated = pred_lq[min_w_idx].detach().cpu()
 
+            k = per_class_done.get(target_type, 0)
+            fid = f"{target_type}_{k:04d}"
+
+            # 调参实验：落盘全部去噪中间步（w 栈），供逐步质检「扩散步数→质量」曲线
+            w_files = []
+            if args.save_all_w:
+                n_w = pred_lq.shape[0]
+                for ki in range(n_w):
+                    wf = f"{fid}_w{ki}.npy"
+                    np.save(outdir / wf, _tensor_to_01(pred_lq[ki].detach().cpu()))
+                    w_files.append(wf)
+
             ref = test_data["img"][0, 0].detach().cpu()
             gt = test_data["img"][0, 1].detach().cpu()
             src_az = _angle_deg(test_data["azimuth_angle"][0, 0])
             tgt_az = _angle_deg(test_data["azimuth_angle"][0, 1])
             src_inc = _angle_deg(test_data["incidence_angle"][0, 0])
             tgt_inc = _angle_deg(test_data["incidence_angle"][0, 1])
-
-            k = per_class_done.get(target_type, 0)
-            fid = f"{target_type}_{k:04d}"
             np.save(outdir / f"{fid}_ref.npy", _tensor_to_01(ref))
             np.save(outdir / f"{fid}_gt.npy", _tensor_to_01(gt))
             np.save(outdir / f"{fid}_gen.npy", _tensor_to_01(generated))
@@ -114,6 +125,7 @@ def main():
                 "ref_file": f"{fid}_ref.npy",
                 "gt_file": f"{fid}_gt.npy",
                 "gen_file": f"{fid}_gen.npy",
+                "w_files": w_files,
             })
             per_class_done[target_type] = k + 1
 

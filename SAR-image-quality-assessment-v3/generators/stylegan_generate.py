@@ -2,7 +2,7 @@
 """StyleGAN 条件生成封装（在 stylegan4SAR/.venv 内运行，cwd=stylegan4SAR 目录）。
 
 按「类别 + 方位角」条件批量生成 SAR 图像：
-    c = [onehot(10), sin(az), cos(az)]  （az 为弧度，与数据集 prepare 脚本口径一致）
+    c = [onehot(classes), sin(az), cos(az)]  （az 为弧度，与数据集 prepare 脚本口径一致）
 
 用法：
     python generators/stylegan_generate.py \
@@ -98,8 +98,11 @@ def main():
                 c[j, ci] = 1.0
                 c[j, args.classes] = math.sin(math.radians(az))
                 c[j, args.classes + 1] = math.cos(math.radians(az))
+            fwd_kw = {"noise_mode": "const"}
+            if args.aasg_enabled:
+                fwd_kw["aasg_enabled"] = True
             with torch.no_grad():
-                gen = net(z, c, noise_mode="const", aasg_enabled=bool(args.aasg_enabled))
+                gen = net(z, c, **fwd_kw)
             # [B,3,H,W] -> 灰度 uint8（取第一通道）
             arr = gen[:, 0:1].clamp(-1, 1).add(1).mul(127.5).round().clamp(0, 255)
             arr = arr.squeeze(1).cpu().numpy().astype(np.uint8)  # (B,H,W)

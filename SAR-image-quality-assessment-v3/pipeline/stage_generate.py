@@ -1,13 +1,11 @@
 """Stage B —— 生成：调度各模型推理，产出待评估的生成图像 + generation_manifest.json。
 
-- stylegan4sar：两变体（基线/增强）按 (类, 角度) 条件批量生成 128×128。
+- stylegan4sar：StyleGAN2-ADA 基线按 (类, 角度) 条件批量生成 128×128（5 类）。
 - angle_gen：两 checkpoint（geometry/baseline）NVS 生成 64×64 目标视角 + 参考/真值。
 - frequency_gen：X→Ka Pix2Pix 实跑推理（真实 wholeImg 测试集 99 对，生成真实 Ka vs 生成 Ka）。
-- gaussrecon4sar：本机无法重生成，导入预生成 renders(生成)/gt(真值) 成对结果。
 """
 from __future__ import annotations
 
-import numpy as np
 import subprocess
 from pathlib import Path
 
@@ -22,9 +20,25 @@ def _gen_dir(cfg, *parts) -> Path:
     return paths.ws_dir(cfg, "generated", *parts)
 
 
+def _stylegan_angles_json(cfg, m, classes):
+    """从全局 10 类真实 labels.json 抽取 StyleGAN 需要的 5 类角度，并按类顺序重排下标。"""
+    src = paths.ws_dir(cfg, "real", str(m["size"]), "train", "labels.json")
+    labs = io.read_json(src)
+    out = []
+    for ci, cn in enumerate(classes):
+        for lb in labs:
+            if lb["class_name"] == cn:
+                out.append({"class_idx": ci, "class_name": cn,
+                            "azimuth_deg": lb["azimuth_deg"]})
+    dst = paths.ws_dir(cfg, "real", str(m["size"]), "train", "labels_stylegan.json")
+    io.write_json(dst, out)
+    return dst
+
+
 def run_stylegan(cfg, args) -> None:
     m = cfg["models"]["stylegan4sar"]
-    angles_json = paths.ws_dir(cfg, "real", str(m["size"]), "train", "labels.json")
+    classes = m.get("classes") or cfg["datasets"]["class_names"]
+    angles_json = _stylegan_angles_json(cfg, m, classes)
     for variant, v in m["variants"].items():
         out = _gen_dir(cfg, "stylegan4sar", variant)
         cmd = [
@@ -35,7 +49,7 @@ def run_stylegan(cfg, args) -> None:
             "--angles-json", str(angles_json),
             "--per-class", str(m["per_class"]),
             "--aasg-enabled", "1" if v["aasg_enabled"] else "0",
-            "--classes", str(len(cfg["datasets"]["class_names"])),
+            "--classes", str(len(classes)),
             "--device", f"cuda:{cfg['evaluation']['gpu']}",
         ]
         print(f"[stage_b] stylegan4sar/{variant}: {v['note']}")
@@ -43,7 +57,7 @@ def run_stylegan(cfg, args) -> None:
         # 回填类名
         man = io.read_json(out / "generation_manifest.json")
         for s in man["samples"]:
-            s["class_name"] = cfg["datasets"]["class_names"][s["class_idx"]]
+            s["class_name"] = classes[s["class_idx"]]
         io.write_json(out / "generation_manifest.json", man)
 
 
@@ -123,40 +137,6 @@ def run_frequency_gen(cfg, args) -> None:
     io.write_json(out / "generation_manifest.json", man)
 
 
-def run_gaussrecon(cfg, args) -> None:
-    m = cfg["models"]["gaussrecon4sar"]
-    base = Path(paths.resolve(m["source_root"], cfg))
-    for variant, v in m["variants"].items():
-        out = _gen_dir(cfg, "gaussrecon4sar", variant)
-        out.mkdir(parents=True, exist_ok=True)
-        renders_dir = base / v["exp"] / "train" / v["iteration"] / "renders"
-        gt_dir = base / v["exp"] / "train" / v["iteration"] / "gt"
-        samples = []
-        for rp in sorted(renders_dir.glob("*.png")):
-            gp = gt_dir / rp.name
-            if not gp.exists():
-                continue
-            # 文件名约定：{俯仰角}_{方位角}_{类别}.png，如 17_182.790649_T72.png
-            parts = rp.stem.split("_")
-            depression = float(parts[0])
-            azimuth = float(parts[1])
-            cls = parts[2] if len(parts) > 2 else "?"
-            ridx = len(samples)
-            np.save(out / f"{ridx:04d}_gt.npy", io.read_gray_01(gp).astype(np.float32))
-            np.save(out / f"{ridx:04d}_gen.npy", io.read_gray_01(rp).astype(np.float32))
-            samples.append({
-                "ref_idx": f"{ridx:04d}",
-                "azimuth_deg": azimuth,
-                "depression_deg": depression,
-                "class_name": cls,
-                "gt_file": f"{ridx:04d}_gt.npy",
-                "gen_file": f"{ridx:04d}_gen.npy",
-            })
-        io.write_json(out / "generation_manifest.json",
-                      {"total": len(samples), "samples": samples, "note": v.get("note", "")})
-        print(f"[stage_b] gaussrecon4sar/{variant}: 导入 {len(samples)} 对 renders/gt")
-
-
 def run(cfg, args) -> None:
     only = args.model if args and getattr(args, "model", None) else None
     def do(key, fn):
@@ -167,7 +147,6 @@ def run(cfg, args) -> None:
     do("stylegan4sar", run_stylegan)
     do("angle_gen", run_angle_gen)
     do("frequency_gen", run_frequency_gen)
-    do("gaussrecon4sar", run_gaussrecon)
 
 
 if __name__ == "__main__":

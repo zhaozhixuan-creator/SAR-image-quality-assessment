@@ -1,7 +1,7 @@
 """Stage D —— 评估：对每个对齐集调用 v2 指标（6 项论文 + 7 项 FR），写 results/metrics/*/*.json。
 
 指标适用矩阵（按模型 `metrics` 配置裁剪；不适用项置 None）：
-  - stylegan4sar / angle_gen / gaussrecon4sar：全部 13 项
+  - stylegan4sar / angle_gen：全部 13 项
   - frequency_gen（X→Ka 翻译）：仅 SSIM + 7 项 FR（无角度/分布域不匹配）
 """
 from __future__ import annotations
@@ -79,11 +79,6 @@ def run(cfg, args):
     if not only or only == "frequency_gen":
         _evaluate_one(gm, cfg, "frequency_gen", "wholeimg", 64, R_64, E_asc, device,
                       cfg["models"]["frequency_gen"], _metrics_for(cfg, "frequency_gen"))
-
-    if not only or only == "gaussrecon4sar":
-        for variant, v in cfg["models"]["gaussrecon4sar"]["variants"].items():
-            _evaluate_one(gm, cfg, "gaussrecon4sar", variant, 128, R_128, E_asc, device, v,
-                          _metrics_for(cfg, "gaussrecon4sar"))
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ STAGES = {
 - **指标适用矩阵**：`config.yaml` 每模型 `metrics` 字段声明适用子集；`metrics_bridge` 对未声明
   项返回 `None`，报告 schema 稳定（显 `—`）。未声明 `metrics` 的模型默认全 13 项。
 - **FR 配对口径**：七项 FR 依赖「真实↔生成」如何配对，各模型 `pairing` 字段声明语义
-  （stylegan=跨样本同类；angle_gen=真·新视角；frequency=翻译；gaussrecon=重构）。跨模型比较
+  （stylegan=跨样本同类；angle_gen=真·新视角；frequency=翻译）。跨模型比较
   FR 前需先对齐口径。
 - **辅助网络缓存**：`stage_align` 若检测到 `R_128.pt / R_64.pt / E_asc.pt` 已存在则跳过训练；
   删除对应 `.pt` 可强制重训（真实集未变时结果可复现）。

@@ -264,7 +264,7 @@ th{{background:#f4f4f4}} td.k{{text-align:left;font-weight:600}}
 svg{{display:block;margin:8px 0}}
 </style></head><body>
 <h1>SAR 生成图像质检评估报告（v3）</h1>
-<p class="note">评估端复用 v2（论文 §3.1.4 六项指标 + 七项 FR 全参考指标）；生成端覆盖 4 个子目录。</p>
+<p class="note">评估端复用 v2（论文 §3.1.4 六项指标 + 七项 FR 全参考指标）；生成端覆盖 3 个模型。</p>
 
 <h2>1. 指标概览</h2>
 <table><tr><th>模型/变体</th><th>配对数</th>{head}</tr>{body}</table>
@@ -284,10 +284,9 @@ svg{{display:block;margin:8px 0}}
 
 <h2>6. 结论</h2>
 <ul>
-<li><b>StyleGAN4SAR</b>：10 类条件生成（128×128），基线 vs 增强（AASG+ESF+ENL）可直接对比插件增益。基线在多数分布/FR 指标上略优。</li>
+<li><b>StyleGAN4SAR</b>：5 类条件生成（128×128，2S1/BRDM2/D7/T62/ZIL131），StyleGAN2-ADA 基线（原始模型仅支持 5 类，无增强插件）。</li>
 <li><b>angle_gen</b>：NVS 视角生成（64×64），geometry（真几何姿态编码）vs baseline（针孔相机代理）姿态编码对比；adapted 为 geometry 同构的仓库默认 pretrain 权重（step 101715，低于 geometry 的 690000），用于单独分离「checkpoint/adaptation 选择」这一变量。注意：NVS 合成的是新视角而非重构，逐像素 FR 指标（SSIM/MSE/PSNR/NCC）天然偏低，应主要看 AFS/ΔENL 等物理/分布指标。</li>
 <li><b>frequency_gen</b>：X→Ka Pix2Pix 翻译（真实 wholeImg 测试集 99 对）；适用 SSIM + 7 项 FR 逐像素配对指标（FID/ΔENL/CMAE 等分布/角度指标不适用）。</li>
-<li><b>GaussRecon4SAR</b>：3DGS 重构（T72，预生成 renders/gt，本机 Linux 无法重新生成）；按重构保真度评估（render vs gt 配对，全 13 项指标）。</li>
 </ul>
 </body></html>"""
 

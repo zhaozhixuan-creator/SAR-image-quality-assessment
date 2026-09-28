@@ -53,21 +53,23 @@ def _nearest_idx(angles_by_class, ci, target):
 
 def _align_stylegan(cfg):
     m = cfg["models"]["stylegan4sar"]
+    classes = m.get("classes") or cfg["datasets"]["class_names"]
     size = m["size"]
     real_img = np.load(paths.ws_dir(cfg, "real", str(size), "train", "images.npy"))
     real_lab = io.read_json(paths.ws_dir(cfg, "real", str(size), "train", "labels.json"))
 
-    angles_by_class = {ci: [] for ci in range(len(cfg["datasets"]["class_names"]))}
+    angles_by_class = {c: [] for c in classes}
     for i, lb in enumerate(real_lab):
-        angles_by_class[lb["class_idx"]].append((lb["azimuth_deg"], i))
+        if lb["class_name"] in angles_by_class:
+            angles_by_class[lb["class_name"]].append((lb["azimuth_deg"], i))
 
     for variant in m["variants"]:
         gen_dir = paths.ws_dir(cfg, "generated", "stylegan4sar", variant)
         man = io.read_json(gen_dir / "generation_manifest.json")
         real_l, fake_l, ang_l = [], [], []
         for s in man["samples"]:
-            ci = s["class_idx"]
-            ri = _nearest_idx(angles_by_class, ci, s["azimuth_deg"])
+            cn = s["class_name"]
+            ri = _nearest_idx(angles_by_class, cn, s["azimuth_deg"])
             fake = io.read_gray_01(gen_dir / s["filename"])
             real_l.append(real_img[ri])
             fake_l.append(fake)
@@ -123,29 +125,6 @@ def _align_frequency_gen(cfg):
     print(f"[stage_c] frequency_gen/wholeimg: 对齐 {len(real_l)} 对（无角度，仅 FR/SSIM）")
 
 
-def _align_gaussrecon(cfg):
-    """3DGS 重构：real = 真值视图(gt)，fake = 渲染视图(render)；角度取自文件名。"""
-    m = cfg["models"]["gaussrecon4sar"]
-    for variant in m["variants"]:
-        gen_dir = paths.ws_dir(cfg, "generated", "gaussrecon4sar", variant)
-        man_path = gen_dir / "generation_manifest.json"
-        if not man_path.exists():
-            print(f"[stage_c] gaussrecon4sar/{variant}: 无生成结果，跳过")
-            continue
-        man = io.read_json(man_path)
-        real_l, fake_l, ang_l = [], [], []
-        for s in man["samples"]:
-            real_l.append(np.load(gen_dir / s["gt_file"]))
-            fake_l.append(np.load(gen_dir / s["gen_file"]))
-            ang_l.append(s["azimuth_deg"])
-        out = paths.ws_dir(cfg, "aligned", "gaussrecon4sar", variant)
-        out.mkdir(parents=True, exist_ok=True)
-        np.save(out / "real.npy", np.stack(real_l).astype(np.float32))
-        np.save(out / "fake.npy", np.stack(fake_l).astype(np.float32))
-        np.save(out / "angles.npy", np.asarray(ang_l, dtype=np.float64))
-        print(f"[stage_c] gaussrecon4sar/{variant}: 对齐 {len(real_l)} 对")
-
-
 def run(cfg, args):
     import sys
     sys.path.insert(0, str(paths.V3_ROOT))
@@ -156,7 +135,6 @@ def run(cfg, args):
     _align_stylegan(cfg)
     _align_angle_gen(cfg)
     _align_frequency_gen(cfg)
-    _align_gaussrecon(cfg)
 
 
 if __name__ == "__main__":

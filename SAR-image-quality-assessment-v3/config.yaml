@@ -22,7 +22,7 @@ datasets:
   metadata_test:  "{root}/sar_models/GenModel4SAR/angle_gen/data/MSTAR_SOC_10CLASS/test/meta.pkl"
   sizes: [128, 64]                                        # 输出两档真实参考
 
-# 生成模型注册（4 个子目录，覆盖完整）
+# 生成模型注册（3 个子目录）
 models:
   stylegan4sar:
     kind: stylegan
@@ -32,16 +32,18 @@ models:
     size: 128
     per_class: 100                  # 每类生成张数
     seeds_per_class: 1              # 每张用独立随机 z（>=1 时顺序种子）
+    # 原始模型仅支持这 5 类（mstar15_5class 训练集）；不采用 10 类版本
+    classes: [2S1, BRDM2, D7, T62, ZIL131]
     pairing: "跨样本同类配对：按条件方位角在真实同类样本中取最近角（非逐像素重构，FR 偏保守）"
     variants:
-      stylegan2_ada_v1:
-        checkpoint: "{root}/sar_models/stylegan4SAR/training-runs/mstar_soc10_10class/stylegan2_ada_v1/00000-mstar_soc10_train_17deg_128-cond-auto1-kimg5000-batch32-ada/network-snapshot-005000.pkl"
+      stylegan2_ada_5class:
+        checkpoint: "{root}/sar_models/stylegan4SAR/perweights/3_3_weights_baseline/network-snapshot-001300.pkl"
         aasg_enabled: false
-        note: "StyleGAN2-ADA 基线（无插件）"
-      enhanced_stylegan4sar_v1:
-        checkpoint: "{root}/sar_models/stylegan4SAR/training-runs/mstar_soc10_10class/enhanced_stylegan4sar_v1/00000-mstar_soc10_train_17deg_128-cond-auto1-kimg5000-esf-batch32-ada/network-snapshot-005000.pkl"
-        aasg_enabled: true
-        note: "Enhanced StyleGAN4SAR（AASG+ESF+ENL）"
+        note: "StyleGAN2-ADA 基线（5 类条件生成，无插件）"
+      stylegan2_ada_5class_azimuth:
+        checkpoint: "/home/zhaozhixuan/SAR-image-quality-assessment/closed_loop/results/retrain/stylegan_azimuth/00000-mstar15_5class_stride5_maxdev-128-cond-auto1-kimg200-az1-batch32-ada-resumecustom/network-snapshot-000200.pkl"
+        aasg_enabled: false
+        note: "方位角定向微调（closed_loop exp4 产物）：质检估计器 R 作冻结教师，CMAE 90.9°→44.7°（部分缓解，仍未达精确）"
 
   angle_gen:
     kind: angle_gen
@@ -78,30 +80,7 @@ models:
     # 翻译任务（X→Ka 配对），无角度条件、非 MSTAR 幅度分布 → 仅适用配对 FR + SSIM
     metrics: [ssim, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]
     pairing: "翻译配对：生成 Ka vs 真值 Ka 逐像素（仅配对 FR + SSIM 适用）"
-    note: "X→Ka Pix2Pix（真实 wholeImg 测试集 99 对：X 波段 → Ka 波段翻译）"
-
-  gaussrecon4sar:
-    kind: gaussrecon
-    subdir: GaussRecon4SAR
-    size: 128
-    source_root: "{root}/sar_models/GaussRecon4SAR/RaderImagingModel/output"
-    # 3DGS 重构输出为 MSTAR T72 幅度图，与 v2 指标域一致 → 全部 13 项适用
-    metrics: [fid, ssim, afs, delta_enl, bve, cmae_deg, mse, rmse, psnr, ncc, uqi, ms_ssim, fsim]
-    pairing: "重构配对：渲染视图 vs 对应真值视图（逐像素 FR 可跨变体公平比较）"
-    note: "3DGS 重构（预生成 renders/gt，本机 Linux 无法重新生成）"
-    variants:
-      image_SSIM:
-        exp: image_SSIM
-        iteration: ours_300000
-        note: "SSIM 优化重构 30 万 iter（T72，17° 俯仰）"
-      image_SSIM_sanshezhongxin:
-        exp: image_SSIM_sanshezhongxin
-        iteration: ours_30000
-        note: "SSIM 优化重构·无三射中心 3 万 iter"
-      reconstruction_CD_sanshezhongxin:
-        exp: reconstruction_CD_sanshezhongxin
-        iteration: ours_30000
-        note: "跨俯仰重构·无三射中心 3 万 iter"
+    note: "X→Ka Pix2Pix 跨波段翻译（非格式转换；真实 wholeImg 测试集 99 对：X 波段 → Ka 波段翻译）"
 
 # 评估环境与参数
 evaluation:
